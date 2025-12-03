@@ -1,0 +1,320 @@
+================================================================================
+                    AUTHENTICATION SETUP GUIDE
+                        Cura-AI Backend
+================================================================================
+
+This guide will help you configure the authentication system with OTP email
+verification and Google OAuth.
+
+================================================================================
+1. INSTALL DEPENDENCIES
+================================================================================
+
+From your project root:
+
+    pip install -r requirements.txt
+
+New packages installed:
+  - aiosmtplib (async SMTP for emails)
+  - jinja2 (email templates)
+  - authlib (Google OAuth)
+  - pydantic-settings (settings management)
+
+================================================================================
+2. SETUP GMAIL SMTP (For Email OTP)
+================================================================================
+
+Option A: Gmail Account (Recommended for Development)
+-----------------------------------------------------
+1. Use a Gmail account (create new one for testing)
+2. Enable 2-Factor Authentication:
+   - Go to: https://myaccount.google.com/security
+   - Click "2-Step Verification" → Turn it on
+
+3. Generate App Password:
+   - Go to: https://myaccount.google.com/apppasswords
+   - Select app: "Mail"
+   - Select device: "Other (Custom name)" → "Cura AI"
+   - Copy the 16-character password
+
+4. Update .env file:
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASSWORD=your-16-char-app-password
+   FROM_EMAIL=your-email@gmail.com
+   FROM_NAME=Cura AI
+
+Option B: Production Email Service (Recommended for Production)
+---------------------------------------------------------------
+- SendGrid: https://sendgrid.com (100 emails/day free)
+- AWS SES: https://aws.amazon.com/ses/ (62,000 emails/month free)
+- Mailgun: https://www.mailgun.com (5,000 emails/month free)
+
+For SendGrid example:
+   SMTP_HOST=smtp.sendgrid.net
+   SMTP_PORT=587
+   SMTP_USER=apikey
+   SMTP_PASSWORD=your-sendgrid-api-key
+   FROM_EMAIL=noreply@yourdomain.com
+
+================================================================================
+3. SETUP GOOGLE OAUTH
+================================================================================
+
+Step 1: Create Google Cloud Project
+------------------------------------
+1. Go to: https://console.cloud.google.com/
+2. Create new project or select existing
+3. Name: "Cura AI" (or your preference)
+
+Step 2: Configure OAuth Consent Screen
+---------------------------------------
+1. Go to: APIs & Services → OAuth consent screen
+2. Choose "External" (for testing)
+3. Fill in:
+   - App name: Cura AI
+   - User support email: your email
+   - Developer contact: your email
+4. Add scopes:
+   - .../auth/userinfo.email
+   - .../auth/userinfo.profile
+   - openid
+5. Add test users (your email for testing)
+6. Save
+
+Step 3: Create OAuth Credentials
+---------------------------------
+1. Go to: APIs & Services → Credentials
+2. Click "Create Credentials" → "OAuth 2.0 Client ID"
+3. Application type: "Web application"
+4. Name: "Cura AI Backend"
+5. Authorized redirect URIs:
+   - http://localhost:8000/auth/google/callback (development)
+   - https://api.cura-ai.com/auth/google/callback (production)
+6. Click "Create"
+7. Copy Client ID and Client Secret
+
+Step 4: Create OAuth Client for Mobile (Optional)
+--------------------------------------------------
+1. Create another OAuth 2.0 Client ID
+2. Application type: Choose platform
+   - For iOS: "iOS"
+   - For Android: "Android"
+3. Follow platform-specific setup
+4. Copy Client ID
+
+Step 5: Update .env file
+-------------------------
+GOOGLE_CLIENT_ID=123456789-abc123def456.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-abc123def456ghi789
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+
+================================================================================
+4. CREATE DATABASE MIGRATION
+================================================================================
+
+We need to create a migration for the new fields and EmailVerification table.
+
+Create migration:
+    alembic revision --autogenerate -m "Add email verification and OAuth support"
+
+Review the generated migration file in:
+    alembic/versions/XXX_add_email_verification_and_oauth_support.py
+
+Apply migration:
+    alembic upgrade head
+
+Manual Migration (if autogenerate doesn't work):
+------------------------------------------------
+Create file: alembic/versions/002_auth_enhancements.py
+
+```python
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+
+revision = '002'
+down_revision = '001'  # Your previous migration ID
+
+def upgrade():
+    # Update users table
+    op.add_column('user', sa.Column('is_email_verified', sa.Boolean(), nullable=False, server_default='false'))
+    op.add_column('user', sa.Column('google_id', sa.String(length=255), nullable=True))
+    op.add_column('user', sa.Column('oauth_provider', sa.String(length=50), nullable=True))
+    op.add_column('user', sa.Column('avatar_url', sa.String(length=500), nullable=True))
+    op.alter_column('user', 'hashed_password', nullable=True)
+    op.create_index('ix_user_google_id', 'user', ['google_id'], unique=True)
+    
+    # Create email_verifications table
+    op.create_table('email_verifications',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=True),
+        sa.Column('email', sa.String(length=255), nullable=False),
+        sa.Column('otp_code', sa.String(length=6), nullable=False),
+        sa.Column('created_at', sa.DateTime(), nullable=False),
+        sa.Column('expires_at', sa.DateTime(), nullable=False),
+        sa.Column('is_used', sa.Boolean(), nullable=False, server_default='false'),
+        sa.Column('verified_at', sa.DateTime(), nullable=True),
+        sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index('ix_email_verifications_email', 'email_verifications', ['email'])
+
+def downgrade():
+    op.drop_index('ix_email_verifications_email')
+    op.drop_table('email_verifications')
+    op.drop_index('ix_user_google_id')
+    op.drop_column('user', 'avatar_url')
+    op.drop_column('user', 'oauth_provider')
+    op.drop_column('user', 'google_id')
+    op.drop_column('user', 'is_email_verified')
+    op.alter_column('user', 'hashed_password', nullable=False)
+```
+
+================================================================================
+5. TEST THE SYSTEM
+================================================================================
+
+Start the server:
+    uvicorn app.main:app --reload
+
+API will be available at: http://localhost:8000
+API docs at: http://localhost:8000/docs
+
+Test Flow:
+----------
+1. Register a new user:
+   POST /auth/register
+   {
+     "email": "test@example.com",
+     "password": "SecurePassword123",
+     "confirm_password": "SecurePassword123",
+     "full_name": "Test User"
+   }
+
+2. Check your email for 6-digit OTP code
+
+3. Verify email:
+   POST /auth/verify-email
+   {
+     "email": "test@example.com",
+     "otp_code": "123456"
+   }
+   
+   Returns: access_token, refresh_token, user data
+
+4. Login:
+   POST /auth/login
+   username=test@example.com&password=SecurePassword123
+
+5. Get current user:
+   GET /auth/me
+   Headers: Authorization: Bearer <access_token>
+
+Test Google OAuth:
+------------------
+1. Web flow:
+   Navigate to: http://localhost:8000/auth/google
+   
+2. Mobile flow (send ID token):
+   POST /auth/google/token
+   {
+     "id_token": "google_id_token_from_mobile_sdk"
+   }
+
+================================================================================
+6. TROUBLESHOOTING
+================================================================================
+
+Issue: Email not sending
+------------------------
+Solution:
+- Check SMTP credentials in .env
+- For Gmail, ensure 2FA and App Password are set up
+- Check firewall/antivirus blocking port 587
+- Check server logs for detailed error:
+    structlog will log email failures
+
+Issue: Google OAuth not working
+--------------------------------
+Solution:
+- Verify OAuth credentials in Google Console
+- Check redirect URI matches exactly
+- Ensure test users are added in OAuth consent screen  (external apps)
+- Check GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env
+
+Issue: OTP expired
+-------------------
+Solution:
+- Default expiry is 10 minutes
+- Use /auth/resend-otp to get a new code
+- Adjust OTP_EXPIRY_MINUTES in .env if needed
+
+Issue: Database migration failed
+---------------------------------
+Solution:
+- Check database connection
+- Ensure previous migrations are applied
+- Manually create migration (see section 4)
+- Check alembic.ini configuration
+
+================================================================================
+7. SECURITY NOTES
+================================================================================
+
+✓ Passwords are hashed with bcrypt (secure)
+✓ JWT tokens have expiration
+✓ OTP codes expire in 10 minutes
+✓ Rate limiting on OTP resend (max 3 per 10 min)
+✓ OAuth state parameter prevents CSRF  (TODO: implement state storage)
+✓ Email verification required before login
+
+TODO for Production:
+-------------------
+□ Implement refresh token rotation
+□ Add account lockout after failed login attempts
+□ Store OAuth state in Redis for verification
+□ Add password strength requirements UI
+□ Implement CORS properly (not allow all origins)
+□ Use production email service (SendGrid/SES)
+□ Enable HTTPS only
+□ Add rate limiting middleware
+□ Implement password reset flow
+□ Add 2FA (TOTP) support
+
+================================================================================
+8. NEXT STEPS
+================================================================================
+
+1. ✅ Dependencies installed
+2. ✅ Email service configured (.env)
+3. ✅ Google OAuth configured (.env)
+4. ⏳ Database migration applied
+5. ⏳ Test authentication flow
+6. ⏳ Update mobile app integration
+7. ⏳ Update web app integration
+8. ⏳ Deploy to production
+
+================================================================================
+9. MOBILE & WEB INTEGRATION
+================================================================================
+
+See updated implementation plans:
+- IMPLEMENTATION_PLAN_MOBILE.txt
+- IMPLEMENTATION_PLAN_WEB.txt
+
+Mobile (Flutter) will use:
+- POST /auth/register → email/password/name
+- POST /auth/verify-email → OTP code
+- POST /auth/login → email/password
+- POST /auth/google/token → Google Sign-In SDK ID token
+
+Web (Next.js) will use:
+- Same as mobile for email/password
+- GET /auth/google → OAuth redirect flow
+- GET /auth/google/callback → Handle OAuth response
+
+================================================================================
+END OF SETUP GUIDE
+================================================================================

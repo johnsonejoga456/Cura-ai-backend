@@ -1,0 +1,999 @@
+================================================================================
+                CURA-AI BACKEND IMPLEMENTATION PLAN
+                        "An AI That Cares"
+================================================================================
+
+PROJECT OVERVIEW
+================================================================================
+Transform the existing FastAPI authentication backend into a comprehensive,
+production-ready API for Cura-AI - a caring AI assistant that works across
+mobile and web platforms.
+
+CURRENT STATE:
+  ✓ FastAPI with basic authentication (JWT)
+  ✓ PostgreSQL database (Supabase)
+  ✓ User model with registration/login
+  ✓ SQLModel ORM with Alembic migrations
+
+TARGET STATE:
+  ✓ Real-time AI conversation system
+  ✓ WebSocket support for streaming
+  ✓ Multi-platform support (mobile + web)
+  ✓ Push notification infrastructure
+  ✓ File upload capabilities
+  ✓ Production-ready with monitoring
+
+
+================================================================================
+PHASE 1: FOUNDATION & SETUP (Week 1-2)
+================================================================================
+
+1.1 Dependency Updates
+----------------------
+FILE: requirements.txt
+
+ACTION: Update to modern 2025 versions with new dependencies
+
+CURRENT PACKAGES (Keep & Update):
+  fastapi==0.109.0
+  uvicorn[standard]==0.27.0
+  sqlmodel==0.0.14
+  asyncpg==0.29.0
+  alembic==1.13.1
+  python-jose[cryptography]==3.3.0
+  passlib[bcrypt]==1.7.4
+  python-dotenv==1.0.0
+  email-validator==2.1.0
+  httpx==0.26.0
+  python-multipart==0.0.6
+
+NEW PACKAGES (Add):
+  # WebSocket & Real-Time
+  websockets==12.0
+  
+  # Rate Limiting & Caching
+  slowapi==0.1.9
+  redis==5.0.1
+  
+  # AI Integration
+  openai==1.6.0 (if using OpenAI)
+  anthropic==0.8.0 (if using Claude)
+  tiktoken==0.5.2 (token counting)
+  
+  # File Handling
+  python-magic==0.4.27
+  Pillow==10.2.0
+  
+  # Monitoring & Logging
+  structlog==24.1.0
+  sentry-sdk[fastapi]==1.39.2
+  
+  # Push Notifications
+  firebase-admin==6.4.0
+  
+  # Settings Management
+  pydantic-settings==2.1.0
+  
+  # Testing
+  pytest==7.4.3
+  pytest-asyncio==0.23.3
+  pytest-cov==4.1.0
+  httpx (already included, used for testing)
+
+COMMANDS:
+  pip install --upgrade -r requirements.txt
+
+
+1.2 Configuration System
+-------------------------
+FILE: app/core/config.py (NEW)
+
+PURPOSE: Centralized settings management with environment validation
+
+STRUCTURE:
+  class Settings(BaseSettings):
+      # Database
+      DATABASE_URL: str
+      
+      # Security
+      SECRET_KEY: str
+      ALGORITHM: str = "HS256"
+      ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+      REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+      
+      # AI Service
+      AI_MODEL_URL: str
+      AI_MODEL_API_KEY: str
+      AI_MODEL_PROVIDER: str = "openai"  # or "anthropic", "custom"
+      
+      # Supabase
+      SUPABASE_URL: str
+      SUPABASE_KEY: str
+      SUPABASE_STORAGE_BUCKET: str = "cura-files"
+      
+      # Firebase (Push Notifications)
+      FIREBASE_CREDENTIALS_PATH: str
+      
+      # CORS
+      ALLOWED_ORIGINS: List[str] = ["*"]
+      
+      # Redis
+      REDIS_URL: str = "redis://localhost:6379"
+      
+      # Monitoring
+      SENTRY_DSN: str = ""
+      ENVIRONMENT: str = "development"
+      
+      class Config:
+          env_file = ".env"
+  
+  settings = Settings()
+
+
+1.3 Environment Variables
+--------------------------
+FILE: .env
+
+ADD NEW VARIABLES:
+  # AI Service (coordinate with AI engineer)
+  AI_MODEL_URL=http://localhost:8001
+  AI_MODEL_API_KEY=your-ai-api-key
+  AI_MODEL_PROVIDER=openai
+  
+  # Supabase
+  SUPABASE_URL=https://cuwmijnogsjzqznbaoyl.supabase.co
+  SUPABASE_KEY=your-supabase-anon-key
+  SUPABASE_STORAGE_BUCKET=cura-files
+  
+  # Firebase
+  FIREBASE_CREDENTIALS_PATH=/path/to/firebase-credentials.json
+  
+  # Redis
+  REDIS_URL=redis://localhost:6379
+  
+  # CORS (set specific origins in production)
+  ALLOWED_ORIGINS=["http://localhost:3000","http://localhost:5173","capacitor://localhost","http://localhost"]
+  
+  # Monitoring
+  SENTRY_DSN=your-sentry-dsn
+  ENVIRONMENT=development
+
+
+1.4 Project Structure Setup
+----------------------------
+CREATE NEW DIRECTORIES:
+  app/
+  ├── api/
+  │   ├── endpoints/
+  │   │   ├── auth.py (existing)
+  │   │   ├── chat.py (new)
+  │   │   ├── conversations.py (new)
+  │   │   ├── devices.py (new)
+  │   │   └── uploads.py (new)
+  │   └── deps.py (existing - shared dependencies)
+  ├── core/
+  │   ├── config.py (new)
+  │   ├── database.py (existing)
+  │   ├── security.py (existing)
+  │   └── websocket.py (new)
+  ├── models/
+  │   ├── user.py (existing)
+  │   ├── conversation.py (new)
+  │   ├── message.py (new)
+  │   ├── device.py (new)
+  │   └── __init__.py
+  ├── services/
+  │   ├── ai_service.py (new)
+  │   ├── notification_service.py (new)
+  │   ├── storage_service.py (new)
+  │   └── __init__.py
+  ├── schemas/
+  │   └── (Pydantic schemas if needed separately from models)
+  └── main.py (existing - update)
+
+
+================================================================================
+PHASE 2: DATABASE MODELS (Week 2)
+================================================================================
+
+2.1 Conversation Model
+----------------------
+FILE: app/models/conversation.py (NEW)
+
+PURPOSE: Store user conversation threads
+
+SCHEMA:
+  Table: conversations
+  Columns:
+    - id: int (PK, auto)
+    - user_id: int (FK -> users.id)
+    - title: str (max 255 chars)
+    - status: enum (active, archived, deleted)
+    - created_at: datetime
+    - updated_at: datetime
+    - last_message_at: datetime (nullable)
+  
+  Relationships:
+    - user: One-to-Many with User
+    - messages: One-to-Many with Message
+  
+  Indexes:
+    - user_id (for fast user queries)
+    - status (for filtering)
+    - last_message_at (for sorting)
+
+
+2.2 Message Model
+-----------------
+FILE: app/models/message.py (NEW)
+
+PURPOSE: Store individual messages in conversations
+
+SCHEMA:
+  Table: messages
+  Columns:
+    - id: int (PK, auto)
+    - conversation_id: int (FK -> conversations.id)
+    - role: enum (user, assistant, system)
+    - content: text (max 10,000 chars)
+    - status: enum (sending, sent, error)
+    - metadata: jsonb (AI tokens, model version, etc.)
+    - created_at: datetime
+  
+  Relationships:
+    - conversation: Many-to-One with Conversation
+  
+  Indexes:
+    - conversation_id (for fetching chat history)
+    - created_at (for chronological order)
+    - role (for filtering)
+
+
+2.3 Device Model
+----------------
+FILE: app/models/device.py (NEW)
+
+PURPOSE: Track user devices for push notifications
+
+SCHEMA:
+  Table: devices
+  Columns:
+    - id: int (PK, auto)
+    - user_id: int (FK -> users.id)
+    - fcm_token: str (unique, max 255)
+    - platform: enum (ios, android, web)
+    - device_name: str (nullable, max 255)
+    - is_active: bool (default true)
+    - created_at: datetime
+    - last_active: datetime
+  
+  Relationships:
+    - user: Many-to-One with User
+  
+  Indexes:
+    - fcm_token (unique, for fast lookup)
+    - user_id (for user's devices)
+    - is_active (for filtering active devices)
+
+
+2.4 User Model Updates
+----------------------
+FILE: app/models/user.py (UPDATE EXISTING)
+
+ADD FIELDS:
+  - avatar_url: str (nullable)
+  - preferences: jsonb (user settings)
+  - timezone: str (default "UTC")
+  - language: str (default "en")
+  - last_seen: datetime (nullable)
+
+ADD RELATIONSHIPS:
+  - conversations: List["Conversation"]
+  - devices: List["Device"]
+
+
+2.5 Database Migrations
+-----------------------
+COMMANDS:
+  # Create migration
+  alembic revision --autogenerate -m "Add conversation and messaging tables"
+  
+  # Review migration file
+  # Check alembic/versions/xxx_add_conversation_and_messaging_tables.py
+  
+  # Apply migration
+  alembic upgrade head
+
+VERIFY:
+  # Connect to database and check tables exist
+  # Use Supabase dashboard or psql
+
+
+================================================================================
+PHASE 3: SERVICE LAYER (Week 3)
+================================================================================
+
+3.1 AI Service
+--------------
+FILE: app/services/ai_service.py (NEW)
+
+PURPOSE: Interface between backend and AI model
+
+FEATURES:
+  - Generate AI responses (sync & async)
+  - Stream responses token-by-token
+  - Handle different AI providers (OpenAI, Anthropic, custom)
+  - Track token usage
+  - Error handling and retries
+
+KEY METHODS:
+  async def generate_response(
+      prompt: str,
+      conversation_history: List[Dict],
+      user_context: Optional[Dict] = None
+  ) -> Dict[str, Any]
+  
+  async def stream_response(
+      prompt: str,
+      conversation_history: List[Dict]
+  ) -> AsyncGenerator[str, None]
+
+IMPLEMENTATION NOTES:
+  - Use httpx for async HTTP calls
+  - Support both request-response and streaming
+  - Implement exponential backoff for retries
+  - Log all AI interactions for debugging
+  - Track token usage in message metadata
+
+
+3.2 Notification Service
+------------------------
+FILE: app/services/notification_service.py (NEW)
+
+PURPOSE: Send push notifications to mobile devices
+
+FEATURES:
+  - Send to single device (FCM token)
+  - Send to multiple devices (multicast)
+  - Send to all user's devices
+  - Handle platform-specific payloads (iOS vs Android)
+
+KEY METHODS:
+  async def send_to_device(
+      fcm_token: str,
+      title: str,
+      body: str,
+      data: Optional[Dict] = None
+  ) -> bool
+  
+  async def send_to_user(
+      user_id: int,
+      title: str,
+      body: str,
+      data: Optional[Dict] = None
+  ) -> Dict[str, int]
+
+IMPLEMENTATION NOTES:
+  - Use Firebase Admin SDK
+  - Initialize once at startup
+  - Handle invalid tokens (remove from database)
+  - Support silent notifications (data-only)
+
+
+3.3 Storage Service
+-------------------
+FILE: app/services/storage_service.py (NEW)
+
+PURPOSE: Handle file uploads to Supabase Storage
+
+FEATURES:
+  - Upload files with unique names
+  - Generate signed URLs for private files
+  - Delete files
+  - Validate file types and sizes
+
+KEY METHODS:
+  async def upload_file(
+      file: BinaryIO,
+      filename: str,
+      user_id: int,
+      content_type: str
+  ) -> str  # Returns public URL
+  
+  async def get_signed_url(
+      file_path: str,
+      expires_in: int = 3600
+  ) -> str
+  
+  async def delete_file(
+      file_path: str
+  ) -> bool
+
+IMPLEMENTATION NOTES:
+  - Organize files by user_id: "user_id/unique_filename"
+  - Validate file types using python-magic
+  - Set max file size limit (10MB default)
+  - Generate unique filenames with UUID
+
+
+================================================================================
+PHASE 4: API ENDPOINTS (Week 4-5)
+================================================================================
+
+4.1 Conversation Endpoints
+--------------------------
+FILE: app/api/endpoints/conversations.py (NEW)
+
+ENDPOINTS:
+  POST   /conversations              - Create new conversation
+  GET    /conversations              - List user's conversations
+  GET    /conversations/{id}         - Get conversation details
+  PATCH  /conversations/{id}         - Update conversation (title, status)
+  DELETE /conversations/{id}         - Delete/archive conversation
+  GET    /conversations/{id}/messages - Get conversation messages (paginated)
+
+FEATURES:
+  - Pagination for message history
+  - Filter by status (active, archived)
+  - Sort by last_message_at
+  - Auto-generate conversation titles from first message
+
+
+4.2 Chat Endpoints
+------------------
+FILE: app/api/endpoints/chat.py (NEW)
+
+ENDPOINTS:
+  POST   /chat/send                  - Send message and get AI response
+  POST   /chat/stream                - Send message, stream AI response (SSE)
+  WebSocket /chat/ws/{conversation_id} - Real-time chat via WebSocket
+
+FEATURES:
+  - Include conversation history in AI prompts
+  - Save both user and AI messages
+  - Track token usage in metadata
+  - Update conversation last_message_at
+  - Handle AI service failures gracefully
+
+WEBSOCKET PROTOCOL:
+  Client sends:
+    {"type": "message", "content": "Hello!"}
+  
+  Server streams:
+    {"type": "chunk", "content": "Hi"}
+    {"type": "chunk", "content": " there!"}
+    {"type": "complete", "message_id": 123}
+
+
+4.3 Device Endpoints
+--------------------
+FILE: app/api/endpoints/devices.py (NEW)
+
+ENDPOINTS:
+  POST   /devices/register           - Register/update device
+  GET    /devices                    - List user's devices
+  DELETE /devices/{id}               - Unregister device
+  POST   /devices/test-notification  - Send test notification (dev only)
+
+FEATURES:
+  - Automatic token updates (if device re-registers)
+  - Mark devices inactive after X days of no activity
+  - Support web push (via FCM web SDK)
+
+
+4.4 File Upload Endpoints
+--------------------------
+FILE: app/api/endpoints/uploads.py (NEW)
+
+ENDPOINTS:
+  POST   /uploads/file               - Upload file (image, doc, etc.)
+  GET    /uploads/{file_id}          - Get file info
+  DELETE /uploads/{file_id}          - Delete file
+
+FEATURES:
+  - Validate file type (whitelist: images, PDF, docs)
+  - Validate file size (max 10MB)
+  - Return public URL or signed URL
+  - Associate files with messages (optional)
+
+ALLOWED FILE TYPES:
+  - Images: JPEG, PNG, GIF, WebP
+  - Documents: PDF, DOC, DOCX
+  - (Add more as needed based on AI capabilities)
+
+
+4.5 User Profile Endpoints
+---------------------------
+FILE: app/api/endpoints/users.py (NEW or UPDATE auth.py)
+
+ENDPOINTS:
+  GET    /users/me                   - Get current user profile
+  PATCH  /users/me                   - Update profile (name, avatar, preferences)
+  POST   /users/me/avatar            - Upload avatar image
+  DELETE /users/me                   - Delete account
+
+FEATURES:
+  - Update preferences (theme, language, notifications)
+  - Avatar upload integration
+  - Timezone support
+
+
+================================================================================
+PHASE 5: REAL-TIME FEATURES (Week 5-6)
+================================================================================
+
+5.1 WebSocket Manager
+---------------------
+FILE: app/core/websocket.py (NEW)
+
+PURPOSE: Manage WebSocket connections
+
+FEATURES:
+  - Connection pooling (user_id -> WebSocket)
+  - Broadcast to user (all their connections)
+  - Handle disconnections gracefully
+  - Heartbeat/ping-pong for connection health
+
+CLASS STRUCTURE:
+  class ConnectionManager:
+      active_connections: Dict[int, List[WebSocket]]
+      
+      async def connect(user_id: int, websocket: WebSocket)
+      async def disconnect(user_id: int, websocket: WebSocket)
+      async def send_to_user(user_id: int, message: dict)
+      async def broadcast(message: dict)
+
+
+5.2 WebSocket Chat Implementation
+----------------------------------
+FILE: app/api/endpoints/chat.py (UPDATE)
+
+FEATURES:
+  - Real-time message streaming
+  - Typing indicators
+  - Message delivery confirmation
+  - Automatic reconnection handling
+
+IMPLEMENTATION:
+  @router.websocket("/ws/{conversation_id}")
+  async def websocket_chat(
+      websocket: WebSocket,
+      conversation_id: int,
+      token: str  # JWT via query param
+  ):
+      # 1. Authenticate user from token
+      # 2. Verify conversation ownership
+      # 3. Connect to manager
+      # 4. Listen for messages
+      # 5. Stream AI responses
+      # 6. Handle disconnection
+
+
+5.3 Server-Sent Events (Alternative)
+------------------------------------
+FILE: app/api/endpoints/chat.py (UPDATE)
+
+PURPOSE: Alternative to WebSocket for simpler streaming
+
+ENDPOINT:
+  POST /chat/stream/{conversation_id}
+  
+  returns: text/event-stream
+
+FEATURES:
+  - One-way server to client streaming
+  - Easier to implement than WebSocket
+  - Works better with HTTP proxies
+  - Good for AI response streaming
+
+
+================================================================================
+PHASE 6: MIDDLEWARE & SECURITY (Week 6)
+================================================================================
+
+6.1 Rate Limiting
+-----------------
+FILE: app/main.py (UPDATE)
+
+IMPLEMENTATION:
+  from slowapi import Limiter
+  from slowapi.util import get_remote_address
+  
+  limiter = Limiter(key_func=get_remote_address)
+  app.state.limiter = limiter
+
+RATE LIMITS:
+  - Auth endpoints: 5 requests/minute
+  - Chat endpoints: 30 requests/minute
+  - Upload endpoints: 10 requests/minute
+  - Default: 100 requests/minute
+
+BACKEND:
+  - Use Redis for distributed rate limiting
+  - Or in-memory for single instance
+
+
+6.2 CORS Configuration
+----------------------
+FILE: app/main.py (UPDATE)
+
+CONFIGURATION:
+  from fastapi.middleware.cors import CORSMiddleware
+  
+  app.add_middleware(
+      CORSMiddleware,
+      allow_origins=settings.ALLOWED_ORIGINS,
+      allow_credentials=True,
+      allow_methods=["*"],
+      allow_headers=["*"],
+      expose_headers=["X-Total-Count"]  # For pagination
+  )
+
+PRODUCTION ORIGINS:
+  - https://app.cura-ai.com (web app)
+  - capacitor://localhost (iOS/Android)
+  - http://localhost (iOS/Android dev)
+  - http://localhost:3000 (web dev)
+
+
+6.3 Request Validation
+----------------------
+USE: Pydantic models (already built into FastAPI)
+
+FEATURES:
+  - Validate all request bodies
+  - Validate query parameters
+  - Return 422 for validation errors
+  - Custom error messages
+
+
+6.4 Error Handling
+------------------
+FILE: app/core/exceptions.py (NEW)
+
+CUSTOM EXCEPTIONS:
+  class AIServiceException(Exception)
+  class ConversationNotFoundException(Exception)
+  class UnauthorizedException(Exception)
+
+GLOBAL HANDLER:
+  @app.exception_handler(Exception)
+  async def global_exception_handler(request, exc):
+      logger.error("Unhandled exception", exc_info=exc)
+      return JSONResponse(
+          status_code=500,
+          content={"detail": "Internal server error"}
+      )
+
+
+================================================================================
+PHASE 7: MONITORING & LOGGING (Week 7)
+================================================================================
+
+7.1 Structured Logging
+-----------------------
+FILE: app/core/logging.py (NEW)
+
+SETUP:
+  import structlog
+  
+  structlog.configure(
+      processors=[
+          structlog.stdlib.add_log_level,
+          structlog.processors.TimeStamper(fmt="iso"),
+          structlog.processors.JSONRenderer()
+      ]
+  )
+
+USAGE:
+  logger = structlog.get_logger()
+  logger.info("user_logged_in", user_id=123)
+  logger.error("ai_service_failed", error=str(e))
+
+
+7.2 Sentry Integration
+----------------------
+FILE: app/main.py (UPDATE)
+
+SETUP:
+  import sentry_sdk
+  from sentry_sdk.integrations.fastapi import FastAPIIntegration
+  
+  sentry_sdk.init(
+      dsn=settings.SENTRY_DSN,
+      environment=settings.ENVIRONMENT,
+      integrations=[FastAPIIntegration()],
+      traces_sample_rate=0.1  # 10% of transactions
+  )
+
+FEATURES:
+  - Automatic error tracking
+  - Performance monitoring
+  - User context (attach user_id)
+
+
+7.3 Health Check Endpoint
+--------------------------
+FILE: app/api/endpoints/health.py (NEW)
+
+ENDPOINT:
+  GET /health
+  
+  Returns:
+    {
+      "status": "healthy",
+      "database": "connected",
+      "redis": "connected",
+      "ai_service": "available"
+    }
+
+CHECKS:
+  - Database connection
+  - Redis connection (if used)
+  - AI service availability
+  - Disk space
+
+
+================================================================================
+PHASE 8: TESTING (Week 7-8)
+================================================================================
+
+8.1 Unit Tests
+--------------
+DIRECTORY: tests/
+
+STRUCTURE:
+  tests/
+  ├── conftest.py (fixtures)
+  ├── test_auth.py (existing)
+  ├── test_conversations.py
+  ├── test_messages.py
+  ├── test_devices.py
+  ├── test_ai_service.py
+  └── test_notifications.py
+
+COVERAGE GOAL: 80%+
+
+COMMAND:
+  pytest --cov=app --cov-report=html
+
+
+8.2 Integration Tests
+---------------------
+FILE: tests/integration/
+
+TESTS:
+  - End-to-end conversation flow
+  - WebSocket connection and streaming
+  - File upload and retrieval
+  - Push notification delivery
+
+COMMAND:
+  pytest tests/integration/
+
+
+8.3 Load Testing
+----------------
+FILE: tests/load/locustfile.py
+
+SCENARIOS:
+  - 100 concurrent users sending messages
+  - 50 concurrent WebSocket connections
+  - 1000 API calls over 1 minute
+
+COMMAND:
+  locust -f tests/load/locustfile.py
+
+
+================================================================================
+PHASE 9: DEPLOYMENT (Week 8-9)
+================================================================================
+
+9.1 Docker Setup
+----------------
+FILE: Dockerfile (NEW)
+
+CONTENT:
+  FROM python:3.11-slim
+  
+  WORKDIR /app
+  
+  COPY requirements.txt .
+  RUN pip install --no-cache-dir -r requirements.txt
+  
+  COPY . .
+  
+  CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+FILE: docker-compose.yml (NEW)
+
+CONTENT:
+  version: '3.8'
+  services:
+    api:
+      build: .
+      ports:
+        - "8000:8000"
+      env_file:
+        - .env
+      depends_on:
+        - redis
+    
+    redis:
+      image: redis:7-alpine
+      ports:
+        - "6379:6379"
+
+
+9.2 Railway Deployment
+----------------------
+STEPS:
+  1. Create Railway account
+  2. Connect GitHub repository
+  3. Add PostgreSQL service (or use existing Supabase)
+  4. Add Redis service
+  5. Set environment variables
+  6. Deploy!
+
+ENVIRONMENT VARIABLES:
+  - Copy all from .env
+  - Update DATABASE_URL from Railway PostgreSQL
+  - Update REDIS_URL from Railway Redis
+  - Set production ALLOWED_ORIGINS
+
+
+9.3 CI/CD Pipeline
+------------------
+FILE: .github/workflows/deploy.yml (NEW)
+
+TRIGGERS:
+  - Push to main branch
+  - Pull request
+
+STEPS:
+  1. Run linters (black, isort, flake8)
+  2. Run type checker (mypy)
+  3. Run tests
+  4. Build Docker image
+  5. Deploy to Railway (on main branch)
+
+
+9.4 Domain & SSL
+----------------
+  1. Purchase domain (e.g., api.cura-ai.com)
+  2. Point to Railway deployment
+  3. SSL auto-configured by Railway
+
+
+================================================================================
+PHASE 10: DOCUMENTATION (Week 9)
+================================================================================
+
+10.1 API Documentation
+----------------------
+AUTOMATIC:
+  - FastAPI auto-generates OpenAPI docs
+  - Available at /docs (Swagger UI)
+  - Available at /redoc (ReDoc)
+
+CUSTOMIZE:
+  - Add descriptions to endpoints
+  - Add examples to request/response models
+  - Group endpoints by tags
+
+
+10.2 README
+-----------
+FILE: README.md (UPDATE)
+
+SECTIONS:
+  - Overview
+  - Features
+  - Tech Stack
+  - Setup Instructions
+  - API Documentation
+  - Deployment
+  - Contributing
+
+
+10.3 Postman Collection
+-----------------------
+  1. Export OpenAPI spec from /docs
+  2. Import into Postman
+  3. Add environment variables
+  4. Share with team
+
+
+================================================================================
+FINAL CHECKLIST
+================================================================================
+
+Before Production:
+  [ ] All tests passing
+  [ ] 80%+ code coverage
+  [ ] Linting passes (black, isort, flake8)
+  [ ] Type checking passes (mypy)
+  [ ] Environment variables documented
+  [ ] Secrets not in code
+  [ ] Rate limiting configured
+  [ ] CORS properly configured
+  [ ] Sentry integrated
+  [ ] Health check endpoint working
+  [ ] Database migrations applied
+  [ ] SSL certificate active
+  [ ] Backup strategy in place
+  [ ] Monitoring dashboard set up
+  [ ] API documentation complete
+  [ ] Load testing completed
+  [ ] Security audit done
+
+Post-Launch:
+  [ ] Monitor error rates in Sentry
+  [ ] Monitor API performance
+  [ ] Monitor database performance
+  [ ] Set up alerts for downtime
+  [ ] Regular dependency updates
+  [ ] Regular security patches
+
+
+================================================================================
+TIMELINE SUMMARY
+================================================================================
+
+Week 1-2:   Foundation & Setup + Database Models
+Week 3:     Service Layer
+Week 4-5:   API Endpoints + Real-Time Features
+Week 6:     Middleware & Security
+Week 7:     Monitoring + Testing (Unit)
+Week 8:     Testing (Integration/Load) + Deployment Setup
+Week 9:     Deployment + Documentation
+
+TOTAL: 9 weeks to production-ready backend
+
+
+================================================================================
+COORDINATION WITH OTHER TEAMS
+================================================================================
+
+With AI Engineer:
+  - Week 1: Define API contract for AI model
+  - Week 3: Test AI service integration
+  - Week 5: Performance testing
+
+With Mobile Team:
+  - Week 2: Share API design
+  - Week 4: Provide development environment
+  - Week 6: Test mobile integration
+  - Week 8: Beta testing
+
+With Web Team:
+  - Week 2: Share API design
+  - Week 4: Provide development environment
+  - Week 6: Test web integration
+  - Week 8: Beta testing
+
+
+================================================================================
+SUCCESS METRICS
+================================================================================
+
+Performance:
+  - API response time < 200ms (95th percentile)
+  - AI response generation < 2s (without streaming)
+  - WebSocket connection latency < 100ms
+  - 99.9% uptime
+
+Scalability:
+  - Support 1000+ concurrent users
+  - Handle 10,000+ API calls/minute
+  - Database queries optimized (< 50ms)
+
+Quality:
+  - 80%+ code coverage
+  - Zero critical security issues
+  - < 1% error rate
+
+
+================================================================================
+END OF BACKEND IMPLEMENTATION PLAN
+================================================================================

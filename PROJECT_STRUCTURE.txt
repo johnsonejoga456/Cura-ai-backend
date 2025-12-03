@@ -1,0 +1,512 @@
+================================================================================
+                    CURA-AI PROJECT FOLDER STRUCTURE
+                  Complete Architecture Overview
+                        "An AI That Cares"
+================================================================================
+
+This document outlines the complete folder structure for all three components
+of the Cura-AI project: Backend (Python/FastAPI), Mobile (Flutter), and 
+Web (Next.js).
+
+================================================================================
+1. BACKEND - Python/FastAPI Project
+================================================================================
+
+cura-ai-backend/
+│
+├── app/
+│   ├── __init__.py
+│   ├── main.py                          # FastAPI app entry point
+│   │
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── deps.py                      # Shared dependencies (auth, db session)
+│   │   └── endpoints/
+│   │       ├── __init__.py
+│   │       ├── auth.py                  # Authentication endpoints (login, register)
+│   │       ├── users.py                 # User management endpoints
+│   │       ├── conversations.py         # Conversation CRUD endpoints
+│   │       ├── chat.py                  # Chat endpoints + WebSocket
+│   │       ├── devices.py               # Device registration for push notifications
+│   │       ├── uploads.py               # File upload endpoints
+│   │       └── health.py                # Health check endpoint
+│   │
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config.py                    # Settings & environment management
+│   │   ├── database.py                  # Database connection & session
+│   │   ├── security.py                  # JWT, password hashing
+│   │   ├── websocket.py                 # WebSocket connection manager
+│   │   ├── exceptions.py                # Custom exceptions
+│   │   └── logging.py                   # Structured logging setup
+│   │
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── user.py                      # User model + schemas
+│   │   ├── conversation.py              # Conversation model
+│   │   ├── message.py                   # Message model
+│   │   ├── device.py                    # Device model (for push notifications)
+│   │   └── health_reminder.py           # Health reminder model (optional)
+│   │
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── ai_service.py                # AI model integration
+│   │   ├── notification_service.py      # Push notification service (FCM)
+│   │   └── storage_service.py           # File storage (Supabase Storage)
+│   │
+│   └── schemas/                          # (Optional) Separate Pydantic schemas
+│       ├── __init__.py
+│       ├── auth.py
+│       └── chat.py
+│
+├── alembic/                              # Database migrations
+│   ├── versions/
+│   │   ├── 001_initial.py
+│   │   └── 002_add_chat_tables.py
+│   ├── env.py
+│   └── script.py.mako
+│
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py                      # Pytest fixtures
+│   ├── test_auth.py
+│   ├── test_conversations.py
+│   ├── test_messages.py
+│   ├── test_ai_service.py
+│   ├── integration/
+│   │   ├── test_chat_flow.py
+│   │   └── test_websocket.py
+│   └── load/
+│       └── locustfile.py                 # Load testing
+│
+├── scripts/
+│   ├── seed_data.py                     # Seed database with test data
+│   └── backup_db.py                     # Database backup script
+│
+├── .env                                  # Environment variables (DO NOT COMMIT)
+├── .env.example                          # Example environment file
+├── .gitignore
+├── requirements.txt                      # Python dependencies
+├── Dockerfile                            # Docker container definition
+├── docker-compose.yml                    # Multi-container setup
+├── alembic.ini                           # Alembic configuration
+├── pytest.ini                            # Pytest configuration
+├── README.md                             # Project documentation
+│
+├── TECH_STACK.txt                        # Complete tech stack documentation
+├── IMPLEMENTATION_PLAN_BACKEND.txt       # Backend implementation guide
+├── IMPLEMENTATION_PLAN_MOBILE.txt        # Mobile implementation guide
+└── IMPLEMENTATION_PLAN_WEB.txt           # Web implementation guide
+
+
+================================================================================
+2. MOBILE - Flutter Project
+================================================================================
+
+cura-ai-mobile/
+│
+├── lib/
+│   ├── main.dart                        # App entry point
+│   ├── app.dart                         # Main app widget
+│   │
+│   ├── features/                        # Feature-based organization
+│   │   ├── splash/
+│   │   │   └── splash_screen.dart
+│   │   │
+│   │   ├── onboarding/
+│   │   │   ├── onboarding_screen.dart
+│   │   │   └── widgets/
+│   │   │       └── onboarding_page.dart
+│   │   │
+│   │   ├── auth/
+│   │   │   ├── screens/
+│   │   │   │   ├── login_screen.dart
+│   │   │   │   └── register_screen.dart
+│   │   │   ├── widgets/
+│   │   │   │   ├── auth_button.dart
+│   │   │   │   └── auth_text_field.dart
+│   │   │   └── providers/
+│   │   │       └── auth_provider.dart
+│   │   │
+│   │   ├── chat/
+│   │   │   ├── screens/
+│   │   │   │   ├── conversation_list_screen.dart
+│   │   │   │   └── chat_screen.dart
+│   │   │   ├── widgets/
+│   │   │   │   ├── conversation_card.dart
+│   │   │   │   ├── message_bubble.dart
+│   │   │   │   ├── message_input.dart
+│   │   │   │   ├── typing_indicator.dart
+│   │   │   │   └── file_picker_widget.dart
+│   │   │   └── providers/
+│   │   │       ├── chat_provider.dart
+│   │   │       └── websocket_chat_provider.dart
+│   │   │
+│   │   ├── profile/
+│   │   │   ├── screens/
+│   │   │   │   ├── profile_screen.dart
+│   │   │   │   └── edit_profile_screen.dart
+│   │   │   └── widgets/
+│   │   │       └── avatar_upload.dart
+│   │   │
+│   │   └── settings/
+│   │       ├── screens/
+│   │       │   └── settings_screen.dart
+│   │       └── widgets/
+│   │           ├── theme_toggle.dart
+│   │           └── language_selector.dart
+│   │
+│   ├── core/
+│   │   ├── constants/
+│   │   │   ├── api_constants.dart       # API URLs and endpoints
+│   │   │   ├── app_constants.dart       # App-wide constants
+│   │   │   └── asset_constants.dart     # Asset paths
+│   │   │
+│   │   ├── theme/
+│   │   │   ├── app_theme.dart           # Light & dark themes
+│   │   │   ├── app_colors.dart          # Color palette
+│   │   │   └── app_text_styles.dart     # Typography
+│   │   │
+│   │   ├── utils/
+│   │   │   ├── validators.dart          # Form validators
+│   │   │   ├── date_formatter.dart      # Date utilities
+│   │   │   └── error_handler.dart       # Error handling
+│   │   │
+│   │   ├── widgets/                     # Reusable widgets
+│   │   │   ├── custom_button.dart
+│   │   │   ├── custom_text_field.dart
+│   │   │   ├── loading_indicator.dart
+│   │   │   ├── empty_state.dart
+│   │   │   └── error_widget.dart
+│   │   │
+│   │   ├── services/
+│   │   │   ├── notification_service.dart  # Push notifications
+│   │   │   └── offline_service.dart       # Offline support
+│   │   │
+│   │   └── router/
+│   │       └── app_router.dart          # Navigation routes
+│   │
+│   ├── data/
+│   │   ├── models/
+│   │   │   ├── user.dart
+│   │   │   ├── conversation.dart
+│   │   │   ├── message.dart
+│   │   │   └── device.dart
+│   │   │
+│   │   ├── repositories/
+│   │   │   ├── auth_repository.dart
+│   │   │   ├── chat_repository.dart
+│   │   │   └── user_repository.dart
+│   │   │
+│   │   └── services/
+│   │       ├── api_service.dart         # HTTP client (Dio)
+│   │       ├── storage_service.dart     # Secure storage & Hive
+│   │       └── websocket_service.dart   # WebSocket client
+│   │
+│   └── providers/                        # Global Riverpod providers
+│       ├── auth_state_provider.dart
+│       └── theme_provider.dart
+│
+├── assets/
+│   ├── images/
+│   │   ├── logo.png
+│   │   └── onboarding/
+│   │       ├── intro_1.png
+│   │       ├── intro_2.png
+│   │       └── intro_3.png
+│   │
+│   ├── icons/
+│   │   └── app_icon.png
+│   │
+│   ├── fonts/
+│   │   └── (Custom fonts if needed)
+│   │
+│   └── animations/
+│       └── (Lottie animations)
+│
+├── android/
+│   ├── app/
+│   │   ├── build.gradle                 # Android build configuration
+│   │   ├── google-services.json         # Firebase configuration (Android)
+│   │   └── src/
+│   │       └── main/
+│   │           ├── AndroidManifest.xml
+│   │           └── kotlin/
+│   └── gradle/
+│
+├── ios/
+│   ├── Runner/
+│   │   ├── Info.plist                   # iOS configuration
+│   │   └── GoogleService-Info.plist     # Firebase configuration (iOS)
+│   └── Runner.xcodeproj/
+│
+├── test/
+│   ├── models/
+│   ├── providers/
+│   ├── services/
+│   └── widgets/
+│
+├── integration_test/
+│   └── app_test.dart                    # E2E tests
+│
+├── .gitignore
+├── pubspec.yaml                          # Flutter dependencies
+├── analysis_options.yaml                 # Linting rules
+└── README.md
+
+
+================================================================================
+3. WEB - Next.js Project
+================================================================================
+
+cura-ai-web/
+│
+├── public/
+│   ├── icons/                           # PWA icons
+│   │   ├── icon-192x192.png
+│   │   ├── icon-512x512.png
+│   │   └── favicon.ico
+│   │
+│   ├── images/
+│   │   └── logo.png
+│   │
+│   ├── manifest.json                    # PWA manifest
+│   └── robots.txt                       # SEO robots file
+│
+├── src/
+│   ├── app/                             # Next.js 14 App Router
+│   │   ├── layout.tsx                   # Root layout
+│   │   ├── page.tsx                     # Landing page
+│   │   ├── globals.css                  # Global styles
+│   │   │
+│   │   ├── (auth)/                      # Auth route group
+│   │   │   ├── layout.tsx
+│   │   │   ├── login/
+│   │   │   │   └── page.tsx
+│   │   │   └── register/
+│   │   │       └── page.tsx
+│   │   │
+│   │   └── (dashboard)/                 # Dashboard route group
+│   │       ├── layout.tsx               # Dashboard layout with sidebar
+│   │       ├── chat/
+│   │       │   ├── page.tsx             # Chat list
+│   │       │   └── [id]/
+│   │       │       └── page.tsx         # Individual chat
+│   │       ├── profile/
+│   │       │   └── page.tsx
+│   │       └── settings/
+│   │           └── page.tsx
+│   │
+│   ├── components/
+│   │   ├── ui/                          # shadcn/ui components
+│   │   │   ├── button.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── toast.tsx
+│   │   │   ├── avatar.tsx
+│   │   │   ├── switch.tsx
+│   │   │   └── skeleton.tsx
+│   │   │
+│   │   ├── layout/
+│   │   │   ├── navbar.tsx
+│   │   │   ├── sidebar.tsx
+│   │   │   └── footer.tsx
+│   │   │
+│   │   ├── auth/
+│   │   │   ├── login-form.tsx
+│   │   │   └── register-form.tsx
+│   │   │
+│   │   ├── chat/
+│   │   │   ├── conversations-sidebar.tsx
+│   │   │   ├── chat-window.tsx
+│   │   │   ├── message-list.tsx
+│   │   │   ├── message-bubble.tsx
+│   │   │   ├── message-input.tsx
+│   │   │   ├── typing-indicator.tsx
+│   │   │   └── file-upload.tsx
+│   │   │
+│   │   ├── profile/
+│   │   │   ├── profile-card.tsx
+│   │   │   └── avatar-upload.tsx
+│   │   │
+│   │   └── shared/                      # Shared components
+│   │       ├── loading-spinner.tsx
+│   │       ├── empty-state.tsx
+│   │       └── error-boundary.tsx
+│   │
+│   ├── lib/
+│   │   ├── api/
+│   │   │   ├── client.ts                # Axios instance
+│   │   │   ├── query-client.ts          # React Query config
+│   │   │   ├── auth-service.ts          # Auth API calls
+│   │   │   ├── chat-service.ts          # Chat API calls
+│   │   │   ├── user-service.ts          # User API calls
+│   │   │   └── websocket-service.ts     # WebSocket client
+│   │   │
+│   │   ├── hooks/
+│   │   │   ├── use-auth.ts
+│   │   │   ├── use-chat.ts
+│   │   │   ├── use-streaming-chat.ts
+│   │   │   ├── use-theme.ts
+│   │   │   └── use-websocket.ts
+│   │   │
+│   │   ├── utils/
+│   │   │   ├── cn.ts                    # className utility
+│   │   │   ├── validators.ts            # Zod schemas
+│   │   │   ├── date-formatter.ts
+│   │   │   └── error-handler.ts
+│   │   │
+│   │   └── validators/
+│   │       ├── auth-schema.ts           # Auth form schemas
+│   │       └── chat-schema.ts           # Chat form schemas
+│   │
+│   ├── store/                            # Zustand stores
+│   │   ├── auth-store.ts
+│   │   ├── chat-store.ts
+│   │   └── theme-store.ts
+│   │
+│   ├── types/
+│   │   ├── user.ts
+│   │   ├── message.ts
+│   │   ├── conversation.ts
+│   │   └── api.ts
+│   │
+│   ├── config/
+│   │   ├── constants.ts                 # App constants
+│   │   └── env.ts                       # Environment config
+│   │
+│   └── middleware.ts                    # Next.js middleware (auth)
+│
+├── tests/
+│   ├── unit/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   └── utils/
+│   │
+│   └── e2e/
+│       ├── auth.spec.ts
+│       ├── chat.spec.ts
+│       └── profile.spec.ts
+│
+├── .env.local                           # Environment variables (DO NOT COMMIT)
+├── .env.example                         # Example environment file
+├── .gitignore
+├── .eslintrc.json                       # ESLint configuration
+├── .prettierrc                          # Prettier configuration
+├── next.config.js                       # Next.js configuration
+├── tailwind.config.ts                   # Tailwind configuration
+├── tsconfig.json                        # TypeScript configuration
+├── package.json                         # npm dependencies
+├── vitest.config.ts                     # Vitest configuration
+├── playwright.config.ts                 # Playwright E2E config
+└── README.md
+
+
+================================================================================
+4. PROJECT ROOT (Monorepo Setup - Optional)
+================================================================================
+
+If you want to manage all three projects in a single repository:
+
+cura-ai/
+│
+├── backend/                             # (Same as cura-ai-backend above)
+│   └── ...
+│
+├── mobile/                              # (Same as cura-ai-mobile above)
+│   └── ...
+│
+├── web/                                 # (Same as cura-ai-web above)
+│   └── ...
+│
+├── docs/                                # Shared documentation
+│   ├── api/
+│   │   └── api-spec.yaml                # OpenAPI specification
+│   ├── architecture/
+│   │   └── system-diagram.png
+│   └── guides/
+│       ├── getting-started.md
+│       └── deployment.md
+│
+├── .github/                             # GitHub workflows
+│   └── workflows/
+│       ├── backend-deploy.yml
+│       ├── web-deploy.yml
+│       └── mobile-test.yml
+│
+├── .gitignore                           # Root gitignore
+└── README.md                            # Monorepo overview
+
+
+================================================================================
+5. DEPLOYMENT STRUCTURE
+================================================================================
+
+Production Environment:
+
+BACKEND (Railway/Render):
+  cura-ai-backend/ (deployed as containerized service)
+  ├── Environment: Production
+  ├── Domain: api.cura-ai.com
+  └── Services: PostgreSQL, Redis
+
+WEB (Vercel):
+  cura-ai-web/ (deployed to Vercel)
+  ├── Environment: Production
+  ├── Domain: app.cura-ai.com
+  └── CDN: Vercel Edge Network
+
+MOBILE (App Stores):
+  cura-ai-mobile/ (built and deployed)
+  ├── iOS: App Store
+  └── Android: Google Play Store
+
+
+================================================================================
+6. FILE NAMING CONVENTIONS
+================================================================================
+
+BACKEND (Python):
+  - snake_case for files: auth_service.py, user_model.py
+  - Classes: PascalCase (UserCreate, AuthService)
+  - Functions: snake_case (get_current_user, create_token)
+  - Constants: UPPER_SNAKE_CASE (API_VERSION, MAX_FILE_SIZE)
+
+MOBILE (Flutter/Dart):
+  - snake_case for files: auth_provider.dart, chat_screen.dart
+  - Classes: PascalCase (AuthProvider, ChatScreen)
+  - Variables: camelCase (userName, isLoading)
+  - Constants: lowerCamelCase or SCREAMING_SNAKE_CASE
+
+WEB (TypeScript):
+  - kebab-case for files: auth-service.ts, chat-window.tsx
+  - Components: PascalCase (ChatWindow, MessageBubble)
+  - Functions: camelCase (sendMessage, getUserProfile)
+  - Constants: UPPER_SNAKE_CASE (API_URL, MAX_FILE_SIZE)
+
+
+================================================================================
+7. IMPORTANT NOTES
+================================================================================
+
+1. ENVIRONMENT FILES:
+   Never commit .env files to version control!
+   Always use .env.example as a template.
+
+2. SECRET KEYS:
+   Store sensitive data (API keys, tokens) in environment variables.
+
+3. FIREBASE CONFIG:
+   Keep google-services.json and GoogleService-Info.plist out of git.
+
+4. NODE_MODULES / VENV:
+   Always gitignore dependency directories.
+
+5. BUILD ARTIFACTS:
+   Gitignore build outputs (dist/, build/, .next/, etc.)
+
+
+================================================================================
+END OF FOLDER STRUCTURE DOCUMENTATION
+================================================================================

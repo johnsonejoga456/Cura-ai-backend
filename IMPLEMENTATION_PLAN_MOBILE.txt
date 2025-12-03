@@ -1,0 +1,950 @@
+================================================================================
+              CURA-AI MOBILE APP IMPLEMENTATION PLAN
+                 Flutter (iOS + Android from One Codebase)
+                        "An AI That Cares"
+================================================================================
+
+PROJECT OVERVIEW
+================================================================================
+Build a cross-platform mobile application for Cura-AI using Flutter,
+providing a native mobile experience on both iOS and Android from a
+single codebase.
+
+TARGET FEATURES:
+  ✓ Secure authentication (login/register)
+  ✓ Real-time AI chat with streaming responses
+  ✓ Conversation management
+  ✓ Push notifications
+  ✓ File uploads (images, documents)
+  ✓ Offline support
+  ✓ Beautiful, modern UI
+  ✓ Dark/light theme
+
+
+================================================================================
+PHASE 1: PROJECT SETUP (Week 1)
+================================================================================
+
+1.1 Flutter Installation
+-------------------------
+INSTALL:
+  - Flutter SDK 3.16+ (https://flutter.dev)
+  - Android Studio (for Android development)
+  - Xcode (for iOS development - macOS only)
+  - Visual Studio Code with Flutter extension
+
+VERIFY SETUP:
+  flutter doctor
+
+
+1.2 Create Project
+------------------
+COMMAND:
+  flutter create cura_ai_mobile
+  cd cura_ai_mobile
+
+PROJECT STRUCTURE:
+  cura_ai_mobile/
+  ├── lib/
+  │   ├── main.dart
+  │   ├── app.dart
+  │   ├── features/
+  │   │   ├── auth/
+  │   │   ├── chat/
+  │   │   ├── profile/
+  │   │   └── settings/
+  │   ├── core/
+  │   │   ├── constants/
+  │   │   ├── theme/
+  │   │   ├── utils/
+  │   │   └── widgets/
+  │   ├── data/
+  │   │   ├── models/
+  │   │   ├── repositories/
+  │   │   └── services/
+  │   └── providers/
+  ├── assets/
+  │   ├── images/
+  │   ├── icons/
+  │   └── fonts/
+  ├── ios/
+  ├── android/
+  └── pubspec.yaml
+
+
+1.3 Dependencies
+----------------
+FILE: pubspec.yaml
+
+DEPENDENCIES:
+  dependencies:
+    flutter:
+      sdk: flutter
+    
+    # State Management
+    flutter_riverpod: ^2.4.9
+    riverpod_annotation: ^2.3.3
+    
+    # HTTP & API
+    dio: ^5.4.0
+    pretty_dio_logger: ^1.3.1
+    retrofit: ^4.1.0 (optional, type-safe API)
+    
+    # WebSocket & Real-Time
+    web_socket_channel: ^2.4.0
+    
+    # Local Storage
+    shared_preferences: ^2.2.2
+    flutter_secure_storage: ^9.0.0
+    hive: ^2.2.3
+    hive_flutter: ^1.1.0
+    
+    # Authentication
+    jwt_decoder: ^2.0.1
+    
+    # UI Components
+    flutter_svg: ^2.0.9
+    cached_network_image: ^3.3.1
+    shimmer: ^3.0.0
+    lottie: ^3.0.0 (animations)
+    
+    # Navigation
+    go_router: ^13.0.0
+    
+    # Chat UI
+    flutter_chat_ui: ^1.6.10
+    dash_chat_2: ^0.0.18 (alternative)
+    
+    # File Handling
+    file_picker: ^6.1.1
+    image_picker: ^1.0.7
+    path_provider: ^2.1.2
+    
+    # Push Notifications
+    firebase_core: ^2.24.2
+    firebase_messaging: ^14.7.9
+    flutter_local_notifications: ^16.3.2
+    
+    # Utilities
+    intl: ^0.18.1
+    timeago: ^3.6.0
+    url_launcher: ^6.2.3
+    package_info_plus: ^5.0.1
+    connectivity_plus: ^5.0.2
+    
+    # Permissions
+    permission_handler: ^11.1.0
+    
+  dev_dependencies:
+    flutter_test:
+      sdk: flutter
+    flutter_lints: ^3.0.1
+    build_runner: ^2.4.7
+    riverpod_generator: ^2.3.9
+    hive_generator: ^2.0.1
+    retrofit_generator: ^8.0.4
+
+INSTALL:
+  flutter pub get
+
+
+1.4 Firebase Setup
+------------------
+STEPS:
+  1. Create Firebase project (https://console.firebase.google.com)
+  2. Add Android app
+     - Package name: com.curaai.mobile
+     - Download google-services.json → android/app/
+  3. Add iOS app
+     - Bundle ID: com.curaai.mobile
+     - Download GoogleService-Info.plist → ios/Runner/
+  4. Install FlutterFire CLI:
+     dart pub global activate flutterfire_cli
+  5. Configure:
+     flutterfire configure
+
+
+1.5 Initial Configuration
+--------------------------
+FILE: lib/core/constants/api_constants.dart
+
+CONTENT:
+  class ApiConstants {
+    // Development
+    static const String devBaseUrl = 'http://localhost:8000';
+    
+    // Production (update later)
+    static const String prodBaseUrl = 'https://api.cura-ai.com';
+    
+    // Current environment
+    static const String baseUrl = devBaseUrl;
+    
+    // Endpoints
+    static const String loginEndpoint = '/auth/login';
+    static const String registerEndpoint = '/auth/register';
+    static const String conversationsEndpoint = '/conversations';
+    static const String chatEndpoint = '/chat';
+    static const String uploadEndpoint = '/uploads/file';
+    
+    // WebSocket
+    static const String wsBaseUrl = 'ws://localhost:8000';
+    
+    // Timeouts
+    static const Duration connectTimeout = Duration(seconds: 30);
+    static const Duration receiveTimeout = Duration(seconds: 30);
+  }
+
+
+================================================================================
+PHASE 2: CORE INFRASTRUCTURE (Week 1-2)
+================================================================================
+
+2.1 Theme System
+----------------
+FILE: lib/core/theme/app_theme.dart
+
+FEATURES:
+  - Material Design 3
+  - Light and dark themes
+  - Custom color scheme
+  - Typography system
+  - Glassmorphism effects
+
+COLORS:
+  Primary: Deep purple/blue gradient
+  Secondary: Teal/cyan
+  Background (light): White/light gray
+  Background (dark): Dark gray/black
+  Accent: Vibrant colors for CTAs
+
+
+2.2 Data Models
+---------------
+FILE: lib/data/models/user.dart
+
+MODELS NEEDED:
+  - User
+  - Conversation
+  - Message
+  - Device
+  - AuthResponse
+
+EXAMPLE (User):
+  @HiveType(typeId: 0)
+  class User {
+    @HiveField(0)
+    final int id;
+    
+    @HiveField(1)
+    final String email;
+    
+    @HiveField(2)
+    final String? fullName;
+    
+    @HiveField(3)
+    final String? avatarUrl;
+    
+    @HiveField(4)
+    final bool isActive;
+    
+    User({required this.id, required this.email, ...});
+    
+    factory User.fromJson(Map<String, dynamic> json) => User(...);
+    Map<String, dynamic> toJson() => {...};
+  }
+
+
+2.3 API Service
+---------------
+FILE: lib/data/services/api_service.dart
+
+FEATURES:
+  - Dio HTTP client
+  - Automatic JWT token injection
+  - Request/response logging
+  - Error handling
+  - Retry logic
+
+SETUP:
+  class ApiService {
+    late Dio _dio;
+    
+    ApiService() {
+      _dio = Dio(BaseOptions(
+        baseUrl: ApiConstants.baseUrl,
+        connectTimeout: ApiConstants.connectTimeout,
+        receiveTimeout: ApiConstants.receiveTimeout,
+      ));
+      
+      // Add interceptors
+      _dio.interceptors.add(AuthInterceptor());
+      _dio.interceptors.add(PrettyDioLogger());
+    }
+    
+    Future<Response> get(String path, {Map<String, dynamic>? queryParams});
+    Future<Response> post(String path, {dynamic data});
+    Future<Response> patch(String path, {dynamic data});
+    Future<Response> delete(String path);
+  }
+
+
+2.4 Secure Storage
+------------------
+FILE: lib/data/services/storage_service.dart
+
+PURPOSE: Store JWT tokens securely
+
+METHODS:
+  Future<void> saveToken(String token)
+  Future<String?> getToken()
+  Future<void> deleteToken()
+  Future<void> saveRefreshToken(String token)
+  Future<String?> getRefreshToken()
+  Future<void> clear()
+
+IMPLEMENTATION:
+  Uses FlutterSecureStorage for tokens
+  Uses Hive for other data (user profile, settings)
+
+
+2.5 WebSocket Service
+---------------------
+FILE: lib/data/services/websocket_service.dart
+
+PURPOSE: Real-time chat communication
+
+FEATURES:
+  - Connect to WebSocket
+  - Send/receive messages
+  - Auto-reconnection
+  - Stream of incoming messages
+
+METHODS:
+  Future<void> connect(int conversationId, String token)
+  void sendMessage(String content)
+  Stream<Map<String, dynamic>> get messageStream
+  void disconnect()
+
+
+================================================================================
+PHASE 3: AUTHENTICATION (Week 2)
+================================================================================
+
+3.1 Auth State Management
+--------------------------
+FILE: lib/features/auth/providers/auth_provider.dart
+
+STATE:
+  - User? currentUser
+  - bool isAuthenticated
+  - bool isLoading
+  - String? error
+
+METHODS:
+  Future<void> login(String email, String password)
+  Future<void> register(String email, String password, String name)
+  Future<void> logout()
+  Future<void> checkAuthStatus() // On app start
+
+
+3.2 Login Screen
+----------------
+FILE: lib/features/auth/screens/login_screen.dart
+
+FEATURES:
+  - Email and password fields
+  - Form validation
+  - Loading state
+  - Error display
+  - "Remember me" option
+  - Link to register screen
+  - Password visibility toggle
+
+UI:
+  - Beautiful gradient background
+  - Glassmorphism card
+  - Smooth animations
+
+
+3.3 Register Screen
+-------------------
+FILE: lib/features/auth/screens/register_screen.dart
+
+FEATURES:
+  - Email, password, confirm password, full name
+  - Form validation
+  - Password strength indicator
+  - Terms & conditions checkbox
+  - Link to login screen
+
+
+3.4 Auth Repository
+-------------------
+FILE: lib/data/repositories/auth_repository.dart
+
+METHODS:
+  Future<AuthResponse> login(String email, String password)
+  Future<AuthResponse> register(RegisterData data)
+  Future<void> logout()
+  Future<User> getCurrentUser()
+
+IMPLEMENTATION:
+  - Calls API service
+  - Saves tokens to secure storage
+  - Saves user to Hive
+  - Handles errors
+
+
+================================================================================
+PHASE 4: CHAT INTERFACE (Week 3-4)
+================================================================================
+
+4.1 Conversation List
+---------------------
+FILE: lib/features/chat/screens/conversation_list_screen.dart
+
+FEATURES:
+  - List of conversations
+  - Pull to refresh
+  - Swipe to delete/archive
+  - Search conversations
+  - Create new conversation button
+  - Last message preview
+  - Unread indicator
+  - Timestamp (relative time)
+
+UI:
+  - Card-based design
+  - Avatar with gradient background
+  - Smooth list animations
+
+
+4.2 Chat Screen
+---------------
+FILE: lib/features/chat/screens/chat_screen.dart
+
+FEATURES:
+  - Message list (scrollable)
+  - Message input field
+  - Send button
+  - File attachment button
+  - AI typing indicator
+  - Message status (sending, sent, error)
+  - Timestamps
+  - Auto-scroll to bottom
+  - Load more messages on scroll up
+
+UI:
+  - User messages: Right-aligned, colored bubble
+  - AI messages: Left-aligned, different color
+  - Smooth animations
+  - Beautiful message bubbles
+
+
+4.3 Chat State Management
+--------------------------
+FILE: lib/features/chat/providers/chat_provider.dart
+
+STATE:
+  - List<Conversation> conversations
+  - List<Message> messages (for current conversation)
+  - bool isLoading
+  - bool isSending
+  - String? error
+  - bool isTyping (AI typing indicator)
+
+METHODS:
+  Future<void> loadConversations()
+  Future<void> createConversation(String title)
+  Future<void> loadMessages(int conversationId)
+  Future<void> sendMessage(String content)
+  Future<void> deleteConversation(int conversationId)
+
+
+4.4 Message Widget
+------------------
+FILE: lib/features/chat/widgets/message_bubble.dart
+
+FEATURES:
+  - Different styles for user vs AI
+  - Markdown support (optional)
+  - Timestamp
+  - Copy message button
+  - Error indicator with retry
+
+
+4.5 WebSocket Integration
+--------------------------
+FILE: lib/features/chat/providers/websocket_chat_provider.dart
+
+PURPOSE: Real-time chat with streaming
+
+FEATURES:
+  - Connect when entering chat
+  - Stream AI responses token-by-token
+  - Update UI in real-time
+  - Disconnect when leaving chat
+
+
+================================================================================
+PHASE 5: ADDITIONAL FEATURES (Week 4-5)
+================================================================================
+
+5.1 User Profile
+----------------
+FILE: lib/features/profile/screens/profile_screen.dart
+
+FEATURES:
+  - Display user info (name, email, avatar)
+  - Edit profile
+  - Upload avatar
+  - Change password
+  - Delete account
+
+
+5.2 Settings
+------------
+FILE: lib/features/settings/screens/settings_screen.dart
+
+FEATURES:
+  - Theme toggle (light/dark)
+  - Language selection
+  - Notification preferences
+  - Clear cache
+  - About & version info
+  - Logout
+
+
+5.3 File Upload
+---------------
+FILE: lib/features/chat/widgets/file_picker_widget.dart
+
+FEATURES:
+  - Pick image from camera
+  - Pick image from gallery
+  - Pick document
+  - Upload to backend
+  - Display in chat
+
+
+5.4 Push Notifications
+----------------------
+FILE: lib/core/services/notification_service.dart
+
+FEATURES:
+  - Request permission
+  - Get FCM token
+  - Send token to backend
+  - Handle incoming notifications
+  - Handle notification tap (navigate to chat)
+
+IMPLEMENTATION:
+  class NotificationService {
+    Future<void> initialize()
+    Future<String?> getToken()
+    Future<void> registerDevice(String token)
+    void handleMessage(RemoteMessage message)
+    void handleBackgroundMessage(RemoteMessage message)
+  }
+
+
+5.5 Offline Support
+-------------------
+FILE: lib/core/services/offline_service.dart
+
+FEATURES:
+  - Cache conversations locally (Hive)
+  - Cache messages locally
+  - Queue messages when offline
+  - Sync when back online
+  - Show offline indicator
+
+
+================================================================================
+PHASE 6: UI/UX POLISH (Week 5-6)
+================================================================================
+
+6.1 Splash Screen
+-----------------
+FILE: lib/features/splash/splash_screen.dart
+
+FEATURES:
+  - App logo with animation
+  - Check authentication status
+  - Navigate to login or home
+
+
+6.2 Onboarding
+--------------
+FILE: lib/features/onboarding/onboarding_screen.dart
+
+FEATURES:
+  - 3-4 intro slides
+  - Explain app features
+  - Skip button
+  - Show only on first launch
+
+
+6.3 Empty States
+----------------
+FILES: Various empty state widgets
+
+EXAMPLES:
+  - No conversations yet
+  - No messages in conversation
+  - Search no results
+  - Error states with retry
+
+
+6.4 Loading States
+------------------
+WIDGETS:
+  - Shimmer loading for lists
+  - Skeleton screens
+  - Spinner for actions
+  - Progress indicators
+
+
+6.5 Animations
+--------------
+FEATURES:
+  - Page transitions
+  - Message send animation
+  - List item animations
+  - Button press feedback
+  - Pull-to-refresh animation
+
+
+================================================================================
+PHASE 7: TESTING (Week 6-7)
+================================================================================
+
+7.1 Unit Tests
+--------------
+DIRECTORY: test/
+
+FILES:
+  - test/models/user_test.dart
+  - test/providers/auth_provider_test.dart
+  - test/providers/chat_provider_test.dart
+  - test/services/api_service_test.dart
+
+COMMAND:
+  flutter test
+
+
+7.2 Widget Tests
+----------------
+FILES:
+  - test/widgets/message_bubble_test.dart
+  - test/screens/login_screen_test.dart
+
+FEATURES:
+  - Test UI rendering
+  - Test user interactions
+  - Test navigation
+
+
+7.3 Integration Tests
+---------------------
+DIRECTORY: integration_test/
+
+FILES:
+  - integration_test/app_test.dart
+
+SCENARIOS:
+  - Full authentication flow
+  - Create conversation and send message
+  - Upload file
+
+COMMAND:
+  flutter test integration_test/
+
+
+7.4 Manual Testing
+------------------
+DEVICES:
+  - iOS Simulator (various iPhone models)
+  - Android Emulator (various Android versions)
+  - Real devices (iOS and Android)
+
+CHECKLIST:
+  - All screens render correctly
+  - Navigation works
+  - Authentication works
+  - Chat works (real-time)
+  - Notifications work
+  - File upload works
+  - Offline mode works
+  - Dark/light theme works
+
+
+================================================================================
+PHASE 8: BUILD & DEPLOYMENT (Week 7-8)
+================================================================================
+
+8.1 Android Build
+-----------------
+FILE: android/app/build.gradle
+
+CONFIGURATION:
+  - Update applicationId: com.curaai.mobile
+  - Set minSdkVersion: 21 (Android 5.0+)
+  - Set targetSdkVersion: 34 (latest)
+  - Configure signing keys
+
+BUILD COMMANDS:
+  # Debug APK
+  flutter build apk --debug
+  
+  # Release APK
+  flutter build apk --release
+  
+  # App Bundle (for Play Store)
+  flutter build appbundle --release
+
+FILE: android/key.properties (for signing)
+
+CONTENT:
+  storePassword=<password>
+  keyPassword=<password>
+  keyAlias=curaai
+  storeFile=<path to keystore>
+
+
+8.2 iOS Build
+-------------
+FILE: ios/Runner.xcodeproj
+
+CONFIGURATION (Xcode):
+  - Set Bundle Identifier: com.curaai.mobile
+  - Set Team (Apple Developer account)
+  - Configure signing & capabilities
+  - Set deployment target: iOS 12.0+
+
+BUILD COMMANDS:
+  # For simulator
+  flutter build ios --simulator
+  
+  # For device (requires Apple Developer account)
+  flutter build ios --release
+
+
+8.3 App Icons & Splash
+----------------------
+TOOL: flutter_launcher_icons
+
+SETUP:
+  1. Create app icon (1024x1024)
+  2. Add to assets/icon/icon.png
+  3. Configure pubspec.yaml:
+     flutter_icons:
+       android: true
+       ios: true
+       image_path: "assets/icon/icon.png"
+  4. Run: flutter pub run flutter_launcher_icons
+
+
+8.4 Beta Testing
+----------------
+iOS (TestFlight):
+  1. Create app in App Store Connect
+  2. Upload build via Xcode or Transporter
+  3. Submit for TestFlight review
+  4. Invite testers via email
+
+Android (Internal Testing):
+  1. Create app in Google Play Console
+  2. Upload app bundle
+  3. Create internal testing track
+  4. Invite testers via email
+
+
+8.5 Production Release
+----------------------
+iOS (App Store):
+  1. Prepare app listing (screenshots, description)
+  2. Upload final build
+  3. Submit for App Store review
+  4. Wait for approval (1-3 days)
+
+Android (Google Play):
+  1. Prepare app listing (screenshots, description)
+  2. Upload app bundle
+  3. Create production release
+  4. Submit for review (faster than iOS)
+
+
+================================================================================
+PHASE 9: POST-LAUNCH (Ongoing)
+================================================================================
+
+9.1 Analytics
+-------------
+INTEGRATION:
+  - Firebase Analytics
+  - Track user events
+  - Monitor crashes
+
+EVENTS:
+  - User login
+  - Message sent
+  - Conversation created
+  - File uploaded
+  - Push notification received
+
+
+9.2 Crash Reporting
+-------------------
+TOOLS:
+  - Firebase Crashlytics
+  - Sentry (optional)
+
+SETUP:
+  Add firebase_crashlytics package
+  Initialize in main.dart
+  Test crash reporting
+
+
+9.3 Performance Monitoring
+---------------------------
+TOOLS:
+  - Firebase Performance
+  - Flutter DevTools
+
+METRICS:
+  - App startup time
+  - Screen rendering time
+  - Network request times
+  - Memory usage
+
+
+9.4 Updates & Maintenance
+--------------------------
+SCHEDULE:
+  - Bug fixes: As needed
+  - Minor updates: Monthly
+  - Major updates: Quarterly
+
+OTA UPDATES:
+  - Consider CodePush for minor updates
+  - Or use Firebase Remote Config
+
+
+================================================================================
+TIMELINE SUMMARY
+================================================================================
+
+Week 1:     Project setup, dependencies, Firebase
+Week 2:     Core infrastructure, authentication
+Week 3-4:   Chat interface, WebSocket integration
+Week 4-5:   Additional features (profile, settings, uploads, notifications)
+Week 5-6:   UI/UX polish, animations
+Week 6-7:   Testing (unit, widget, integration)
+Week 7-8:   Build configuration, beta testing, deployment
+
+TOTAL: 8 weeks to production-ready mobile app
+
+
+================================================================================
+COORDINATION WITH BACKEND TEAM
+================================================================================
+
+Week 1:
+  - Confirm API endpoints and data models
+  - Get development API URL
+  - Test authentication endpoints
+
+Week 3:
+  - Test chat endpoints
+  - Test WebSocket connection
+  - Test file upload
+
+Week 5:
+  - Test push notifications end-to-end
+  - Performance testing
+
+Week 7:
+  - Beta testing with real backend
+  - Load testing
+
+
+================================================================================
+KEY DESIGN PRINCIPLES
+================================================================================
+
+1. BEAUTIFUL UI:
+   - Modern gradients and colors
+   - Smooth animations
+   - Glassmorphism effects
+   - Responsive design
+
+2. PERFORMANCE:
+   - Lazy loading
+   - Image caching
+   - Efficient state management
+   - Minimize rebuilds
+
+3. USER EXPERIENCE:
+   - Instant feedback
+   - Offline support
+   - Error handling with friendly messages
+   - Accessibility (VoiceOver, TalkBack)
+
+4. SECURITY:
+   - Secure token storage
+   - HTTPS only
+   - Input validation
+   - Biometric authentication
+
+
+================================================================================
+FLUTTER-SPECIFIC BEST PRACTICES
+================================================================================
+
+1. Widget Organization:
+   - Keep widgets small and focused
+   - Extract reusable widgets
+   - Use const constructors
+
+2. State Management:
+   - Use Riverpod for global state
+   - Use setState for local widget state
+   - Avoid unnecessary rebuilds
+
+3. Performance:
+   - Use ListView.builder for long lists
+   - Implement pagination
+   - Cache images
+   - Use const widgets
+
+4. Navigation:
+   - Use go_router for declarative routing
+   - Handle deep links
+   - Preserve navigation state
+
+
+================================================================================
+SUCCESS METRICS
+================================================================================
+
+Technical:
+  - App size < 25MB
+  - Launch time < 2 seconds
+  - 60 FPS scrolling
+  - < 1% crash rate
+
+User Experience:
+  - First message sent < 1 minute after signup
+  - Real-time message latency < 500ms
+  - Push notifications delivered within 5 seconds
+
+Quality:
+  - 80%+ code coverage
+  - 4.0+ rating on App Store/Play Store
+  - < 5% uninstall rate in first week
+
+
+================================================================================
+END OF MOBILE IMPLEMENTATION PLAN
+================================================================================

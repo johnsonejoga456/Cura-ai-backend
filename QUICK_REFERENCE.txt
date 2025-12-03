@@ -1,0 +1,136 @@
+================================================================================
+                    QUICK REFERENCE GUIDE
+              Database Reset & Git Security Setup
+================================================================================
+
+COMPLETED SETUP
+================================================================================
+
+✅ 1. Created .gitignore
+   - .env is now protected from git
+   - Won't be pushed to GitHub
+   
+✅ 2. Created .env.example
+   - Template for other developers
+   - Shows required variables without secrets
+   
+✅ 3. Database Cleared
+   - All tables dropped and recreated
+   - Ready to test with jayworthjohn@gmail.com
+
+
+HOW TO CLEAR DATABASE (Anytime)
+================================================================================
+
+Quick way (Auto-confirm):
+--------------------------
+echo yes | .\venv\Scripts\python -m scripts.reset_database
+
+Safe way (Manual confirm):
+--------------------------
+.\venv\Scripts\python -m scripts.reset_database
+
+Then type: yes
+
+
+TESTING NOW WITH YOUR EMAIL
+================================================================================
+
+Server should be running: uvicorn app.main:app --reload
+
+1. Go to: http://127.0.0.1:8000/docs
+
+2. Register with YOUR email:
+   POST /auth/register
+   {
+     "email": "jayworthjohn@gmail.com",
+     "password": "SecurePass123",
+     "confirm_password": "SecurePass123",
+     "full_name": "John Jay"
+   }
+
+3. Check your email inbox for the OTP code
+
+4. Verify email:
+   POST /auth/verify-email
+   {
+     "email": "jayworthjohn@gmail.com",
+     "otp_code": "123456"  ← From your email
+   }
+
+5. Should work! ✅
+
+
+GIT COMMANDS (When Ready to Push)
+================================================================================
+
+Initialize git (if not done):
+git init
+
+Add files:
+git add .
+
+Commit:
+git commit -m "Initial commit - backend with authentication"
+
+Check .env is NOT staged:
+git status
+
+Should see:
+✅ .gitignore (tracked)
+✅ .env.example (tracked)
+❌ .env (untracked - good!)
+
+Push to GitHub:
+git remote add origin https://github.com/yourusername/cura-ai-backend.git
+git push -u origin main
+
+
+IMPORTANT NOTES
+================================================================================
+
+✅ .env is protected
+   - Never pushed to GitHub
+   - Safe to store credentials
+
+✅ .env.example is public
+   - Shows what variables are needed
+   - No actual secrets
+
+⚠️ If .env was already committed:
+   git rm --cached .env
+   git commit -m "Remove .env from git"
+   git push
+
+
+ENVIRONMENT VARIABLES CURRENTLY SET
+================================================================================
+
+Check your .env has:
+✅ DATABASE_URL (Supabase connection)
+✅ SECRET_KEY
+✅ SMTP_USER (jayworthjohn@gmail.com)
+✅ SMTP_PASSWORD (16-char app password)
+✅ Other required variables
+
+
+TROUBLESHOOTING
+================================================================================
+
+Database won't clear:
+- Make sure server is stopped (Ctrl+C)
+- Run reset script again
+
+.env still showing in git:
+- Run: git rm --cached .env
+- Commit and push
+
+Email not sending:
+- Check SMTP_PASSWORD in .env
+- No spaces in password
+- Must be app password, not regular
+
+
+================================================================================
+You're ready to test! Register with jayworthjohn@gmail.com now! 🚀
+================================================================================

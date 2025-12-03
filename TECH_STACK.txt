@@ -1,0 +1,513 @@
+================================================================================
+                    CURA-AI COMPLETE TECH STACK (2025)
+                        "An AI That Cares"
+================================================================================
+
+================================================================================
+1. BACKEND (Python API)
+================================================================================
+
+Core Framework:
+  ├── FastAPI 0.109+               - Modern async Python web framework
+  ├── Python 3.11+                 - Latest stable Python with performance improvements
+  ├── Uvicorn 0.27+                - ASGI server with workers support
+  └── Pydantic 2.5+                - Data validation (built into FastAPI)
+
+Database & ORM:
+  ├── PostgreSQL 15+               - Primary database (hosted on Supabase)
+  ├── SQLModel 0.0.14+             - SQL database ORM (SQLAlchemy + Pydantic)
+  ├── Asyncpg 0.29+                - Async PostgreSQL driver
+  ├── Alembic 1.13+                - Database migrations
+  └── Redis 5.0+                   - Caching & rate limiting
+
+Authentication & Security:
+  ├── python-jose[cryptography] 3.3.0    - JWT token handling
+  ├── passlib[bcrypt] 1.7.4              - Password hashing
+  ├── python-dotenv 1.0.0                - Environment variables
+  └── slowapi 0.1.9                      - Rate limiting middleware
+
+Real-Time Communication:
+  ├── WebSockets 12.0              - Native FastAPI WebSocket support
+  ├── Server-Sent Events (SSE)     - Alternative to WebSocket for streaming
+  └── Python-socketio 5.11+        - Socket.IO server (if needed)
+
+AI Integration:
+  ├── httpx 0.26+                  - Async HTTP client for AI API calls
+  ├── openai 1.6+                  - OpenAI SDK (if using GPT models)
+  ├── anthropic 0.8+               - Claude SDK (if using Anthropic)
+  ├── langchain 0.1+               - LLM framework (optional, for RAG/chains)
+  └── tiktoken 0.5+                - Token counting for LLMs
+
+File Handling & Storage:
+  ├── python-multipart 0.0.6       - File upload handling
+  ├── python-magic 0.4.27          - File type validation
+  ├── Pillow 10.2+                 - Image processing
+  ├── Supabase Storage             - S3-compatible file storage
+  └── boto3 (optional)             - Direct AWS S3 if needed
+
+Push Notifications:
+  ├── firebase-admin 6.4+          - Firebase Cloud Messaging (FCM)
+  └── APNs (Apple Push)            - Via Firebase or direct integration
+
+Monitoring & Logging:
+  ├── structlog 24.1+              - Structured logging
+  ├── sentry-sdk[fastapi] 1.39+    - Error tracking & monitoring
+  └── prometheus-client 0.19+      - Metrics collection (optional)
+
+Email & Communication:
+  ├── python-ses                   - AWS Simple Email Service
+  ├── sendgrid 6.11+               - SendGrid email (alternative)
+  └── twilio                       - SMS notifications (optional)
+
+Testing:
+  ├── pytest 7.4+                  - Testing framework
+  ├── pytest-asyncio 0.23+         - Async test support
+  ├── httpx (test client)          - API testing
+  ├── pytest-cov                   - Code coverage
+  └── locust 2.20+                 - Load testing
+
+Utilities:
+  ├── email-validator 2.1+         - Email validation
+  ├── python-dateutil              - Date/time utilities
+  ├── pydantic-settings            - Settings management
+  └── pytz                         - Timezone handling
+
+
+================================================================================
+2. MOBILE (Cross-Platform iOS + Android)
+================================================================================
+
+OPTION A: FLUTTER (RECOMMENDED)
+--------------------------------
+Framework & Language:
+  ├── Flutter 3.16+                - Google's UI framework
+  ├── Dart 3.2+                    - Programming language
+  └── Flutter SDK                  - Complete development kit
+
+State Management:
+  ├── Riverpod 2.4+                - Modern state management (RECOMMENDED)
+  ├── Provider 6.1+ (alternative)  - Simple state management
+  └── Bloc 8.1+ (alternative)      - Complex state management
+
+HTTP & API:
+  ├── dio 5.4+                     - HTTP client with interceptors
+  ├── retrofit 4.1+ (optional)     - Type-safe REST client
+  └── pretty_dio_logger            - API call logging
+
+WebSocket & Real-Time:
+  ├── web_socket_channel 2.4+      - WebSocket client
+  ├── socket_io_client 2.0+        - Socket.IO client (if needed)
+  └── flutter_sse 2.0+             - Server-Sent Events
+
+Local Storage:
+  ├── shared_preferences 2.2+      - Simple key-value storage
+  ├── hive 2.2+                    - NoSQL local database
+  ├── secure_storage 9.0+          - Encrypted storage for tokens
+  └── sqflite 2.3+ (optional)      - SQLite for complex local data
+
+Authentication:
+  ├── flutter_secure_storage 9.0+  - Secure token storage
+  ├── jwt_decoder 2.0+             - JWT token decoding
+  └── local_auth 2.2+              - Biometric authentication
+
+UI Components:
+  ├── Material Design 3            - Built into Flutter
+  ├── Cupertino (iOS style)        - Built into Flutter
+  ├── flutter_svg 2.0+             - SVG support
+  ├── cached_network_image 3.3+    - Image caching
+  └── shimmer 3.0+                 - Loading animations
+
+Navigation:
+  ├── go_router 13.0+              - Declarative routing
+  └── auto_route 7.9+ (alternative)
+
+Push Notifications:
+  ├── firebase_messaging 14.7+     - FCM for both iOS & Android
+  ├── flutter_local_notifications  - Local notifications
+  └── firebase_core 2.24+          - Firebase initialization
+
+Chat UI:
+  ├── flutter_chat_ui 1.6+         - Pre-built chat interface
+  ├── dash_chat 2.0+ (alternative) - Another chat UI library
+  └── Custom build                 - For full control
+
+File Handling:
+  ├── file_picker 6.1+             - Pick files from device
+  ├── image_picker 1.0+            - Pick images/videos
+  └── path_provider 2.1+           - File system paths
+
+Media & Camera:
+  ├── camera 0.10+                 - Camera access
+  ├── image 4.1+                   - Image manipulation
+  └── video_player 2.8+            - Video playback
+
+Utilities:
+  ├── intl 0.18+                   - Internationalization
+  ├── timeago 3.6+                 - Relative time formatting
+  ├── url_launcher 6.2+            - Open URLs/links
+  └── package_info_plus 5.0+       - App version info
+
+Development Tools:
+  ├── flutter_lints 3.0+           - Linting rules
+  ├── build_runner 2.4+            - Code generation
+  └── mockito 5.4+                 - Testing mocks
+
+
+OPTION B: REACT NATIVE (Alternative)
+-------------------------------------
+Framework & Language:
+  ├── React Native 0.73+           - Facebook's mobile framework
+  ├── TypeScript 5.3+              - Type-safe JavaScript
+  └── Expo 50+ (optional)          - Managed RN workflow
+
+State Management:
+  ├── Redux Toolkit 2.0+           - State management
+  ├── React Query 5.17+            - Server state management
+  └── Zustand 4.4+ (alternative)   - Lightweight state
+
+HTTP & API:
+  ├── Axios 1.6+                   - HTTP client
+  └── React Query                  - API caching & management
+
+WebSocket:
+  ├── Socket.IO Client 4.6+        - WebSocket library
+  └── Native WebSocket API         - Built-in browser API
+
+Storage:
+  ├── AsyncStorage                 - Simple key-value storage
+  ├── MMKV 2.11+                   - Fast key-value storage
+  └── Keychain (iOS) / Keystore    - Secure storage
+
+UI Libraries:
+  ├── React Native Paper 5.11+     - Material Design
+  ├── NativeBase 3.4+ (alternative)
+  └── React Native Elements 4.0+
+
+Navigation:
+  └── React Navigation 6.1+        - Navigation library
+
+Push Notifications:
+  ├── @react-native-firebase 19.0+ - Firebase integration
+  └── react-native-push-notification
+
+Chat UI:
+  ├── react-native-gifted-chat 2.4+ - Pre-built chat
+  └── Custom build
+
+Testing:
+  ├── Jest 29+                     - Unit testing
+  └── React Native Testing Library
+
+
+================================================================================
+3. WEB (Progressive Web App - PWA)
+================================================================================
+
+Frontend Framework:
+  ├── Next.js 14.1+                - React framework with SSR/SSG
+  ├── React 18.2+                  - UI library
+  ├── TypeScript 5.3+              - Type safety
+  └── Vite 5.0+ (alternative)      - Lightweight React setup
+
+State Management:
+  ├── Zustand 4.4+                 - Lightweight (RECOMMENDED)
+  ├── Redux Toolkit 2.0+           - Complex state
+  ├── Jotai 2.6+ (alternative)     - Atomic state
+  └── TanStack Query 5.17+         - Server state management
+
+UI Framework:
+  ├── Tailwind CSS 3.4+            - Utility-first CSS (RECOMMENDED)
+  ├── shadcn/ui                    - Headless UI components
+  ├── Radix UI 1.0+                - Accessible primitives
+  └── Chakra UI 2.8+ (alternative) - Component library
+
+HTTP & API:
+  ├── Axios 1.6+                   - HTTP client
+  ├── TanStack Query 5.17+         - Data fetching & caching
+  └── SWR 2.2+ (alternative)       - Data fetching hooks
+
+Real-Time:
+  ├── Socket.IO Client 4.6+        - WebSocket library
+  ├── Native WebSocket             - Browser WebSocket API
+  └── SSE (EventSource)            - Server-Sent Events
+
+Authentication:
+  ├── NextAuth.js 4.24+            - Auth for Next.js
+  ├── JWT decode                   - Token handling
+  └── React Context                - Auth state management
+
+Forms & Validation:
+  ├── React Hook Form 7.49+        - Form management
+  ├── Zod 3.22+                    - Schema validation
+  └── Yup 1.3+ (alternative)
+
+Chat UI:
+  ├── react-chat-elements 12.0+    - Pre-built components
+  ├── stream-chat-react 11.0+      - Stream Chat SDK
+  └── Custom build with Tailwind
+
+File Upload:
+  ├── react-dropzone 14.2+         - Drag & drop uploads
+  └── Native File API              - Browser file handling
+
+Notifications:
+  ├── react-hot-toast 2.4+         - Toast notifications
+  ├── sonner 1.3+ (alternative)    - Toast notifications
+  └── Web Push API                 - Browser push notifications
+
+PWA Features:
+  ├── next-pwa 5.6+                - PWA plugin for Next.js
+  ├── Workbox 7.0+                 - Service worker toolkit
+  └── Web App Manifest             - PWA configuration
+
+Internationalization:
+  ├── next-intl 3.4+               - i18n for Next.js
+  └── react-i18next 14.0+          - i18n library
+
+Icons & Assets:
+  ├── lucide-react 0.303+          - Icon library
+  ├── react-icons 5.0+             - Popular icons collection
+  └── heroicons 2.1+               - Tailwind icons
+
+Animations:
+  ├── framer-motion 10.18+         - Animation library
+  └── tailwindcss-animate          - CSS animations
+
+Development Tools:
+  ├── ESLint 8.56+                 - Linting
+  ├── Prettier 3.1+                - Code formatting
+  └── TypeScript ESLint            - TypeScript linting
+
+Testing:
+  ├── Vitest 1.2+ / Jest 29+       - Unit testing
+  ├── React Testing Library 14+    - Component testing
+  └── Playwright 1.41+             - E2E testing
+
+
+================================================================================
+4. DEVOPS & INFRASTRUCTURE
+================================================================================
+
+Containerization:
+  ├── Docker 24+                   - Containerization
+  ├── Docker Compose 2.24+         - Multi-container orchestration
+  └── Dockerfile                   - Container definitions
+
+Backend Hosting Options:
+  ├── Railway                      - Modern platform (RECOMMENDED)
+  ├── Render                       - Easy deployment
+  ├── DigitalOcean App Platform    - Managed hosting
+  ├── AWS ECS/Fargate              - Enterprise option
+  └── Heroku (less recommended)    - Classic platform
+
+Web Hosting Options:
+  ├── Vercel                       - Next.js optimized (RECOMMENDED)
+  ├── Netlify                      - Alternative
+  └── Cloudflare Pages             - Fast global CDN
+
+Mobile Deployment:
+  ├── App Store Connect            - iOS deployment (Apple)
+  ├── Google Play Console          - Android deployment
+  ├── TestFlight                   - iOS beta testing
+  └── Firebase App Distribution    - Beta testing
+
+Database Hosting:
+  └── Supabase                     - PostgreSQL + Storage + Auth (CURRENT)
+
+CI/CD:
+  ├── GitHub Actions               - CI/CD workflows (RECOMMENDED)
+  ├── GitLab CI                    - Alternative
+  └── CircleCI                     - Alternative
+
+Monitoring & Analytics:
+  ├── Sentry                       - Error tracking (all platforms)
+  ├── LogRocket                    - Session replay (web)
+  ├── Firebase Analytics           - Mobile analytics
+  ├── Google Analytics 4           - Web analytics
+  └── Mixpanel                     - Product analytics
+
+CDN & Storage:
+  ├── Supabase Storage             - File storage (current)
+  ├── AWS S3 + CloudFront          - Alternative
+  └── Cloudflare R2                - S3-compatible alternative
+
+SSL & Security:
+  ├── Let's Encrypt                - Free SSL certificates
+  ├── Cloudflare                   - DDoS protection + CDN
+  └── Railway/Vercel SSL           - Auto SSL on platforms
+
+Secrets Management:
+  ├── Environment Variables        - Platform-specific
+  ├── Railway Secrets              - Railway env vars
+  └── GitHub Secrets               - CI/CD secrets
+
+
+================================================================================
+5. DEVELOPMENT TOOLS
+================================================================================
+
+Version Control:
+  └── Git + GitHub                 - Version control & collaboration
+
+IDEs & Editors:
+  ├── VSCode                       - Universal editor (RECOMMENDED)
+  ├── Android Studio               - Flutter/Android development
+  ├── Xcode                        - iOS development (macOS only)
+  └── PyCharm (optional)           - Python IDE
+
+API Development:
+  ├── Postman                      - API testing
+  ├── Insomnia                     - Alternative
+  └── Thunder Client (VSCode)      - VSCode extension
+
+Database Tools:
+  ├── DBeaver                      - Database client
+  ├── Supabase Dashboard           - Built-in tools
+  └── pgAdmin 4                    - PostgreSQL admin
+
+Design & Prototyping:
+  ├── Figma                        - UI/UX design
+  └── Adobe XD (alternative)       - Design tool
+
+Documentation:
+  ├── Swagger/ReDoc                - Auto-generated API docs (FastAPI)
+  ├── Notion                       - Team documentation
+  └── Markdown                     - README files
+
+
+================================================================================
+6. RECOMMENDED DEVELOPMENT WORKFLOW
+================================================================================
+
+Backend:
+  1. Use Poetry or pip-tools for dependency management
+  2. Black + isort for code formatting
+  3. Mypy for type checking
+  4. Pre-commit hooks for code quality
+  5. FastAPI auto-reload during development
+
+Mobile (Flutter):
+  1. Flutter hot reload during development
+  2. Separate dev/staging/prod environments
+  3. Fastlane for automated builds
+  4. Beta testing via TestFlight/Firebase
+
+Web:
+  1. Next.js hot reload
+  2. Vercel preview deployments for PR reviews
+  3. Separate environments (dev/staging/prod)
+  4. Lighthouse for performance testing
+
+
+================================================================================
+7. EXTERNAL SERVICES (Required for Full Features)
+================================================================================
+
+Essential:
+  ├── Supabase                     - Database + Storage (FREE tier available)
+  ├── Firebase                     - Push notifications (FREE tier available)
+  └── Domain name                  - Custom domain for API/web
+
+AI Model Hosting:
+  ├── OpenAI API                   - If using GPT models
+  ├── Anthropic API                - If using Claude models
+  ├── HuggingFace                  - Open-source models
+  ├── Replicate                    - Model hosting platform
+  └── Self-hosted                  - Custom model deployment
+
+Optional:
+  ├── Sentry                       - Error tracking (FREE tier)
+  ├── SendGrid/AWS SES             - Email service
+  └── Twilio                       - SMS service
+
+
+================================================================================
+8. COST ESTIMATION (Monthly, Production)
+================================================================================
+
+Minimal Setup (MVP):
+  ├── Backend Hosting (Railway)    - $5-10/month
+  ├── Database (Supabase)          - $0-25/month (free tier OK for MVP)
+  ├── Web Hosting (Vercel)         - $0 (hobby tier)
+  ├── Firebase (FCM)               - $0 (free tier)
+  ├── Domain                       - $12/year ($1/month)
+  ├── Apple Developer              - $99/year ($8/month)
+  └── Google Play                  - $25 one-time
+  TOTAL: ~$15-45/month
+
+Growing App (1000+ users):
+  ├── Backend Hosting              - $20-50/month
+  ├── Database + Storage           - $25-100/month
+  ├── AI API costs                 - $50-500/month (depends on usage)
+  ├── Monitoring (Sentry)          - $26/month
+  └── CDN/Additional services      - $20-50/month
+  TOTAL: ~$140-700/month
+
+
+================================================================================
+9. TEAM RECOMMENDATIONS
+================================================================================
+
+Minimum Team:
+  ├── 1 Backend Developer (Python/FastAPI) - You
+  ├── 1 AI/ML Engineer (Model development)
+  ├── 1 Mobile Developer (Flutter or React Native)
+  └── 1 Frontend Developer (Next.js/React) - Can be same as mobile dev
+
+Nice to Have:
+  ├── 1 DevOps Engineer (Optional for small team)
+  ├── 1 UI/UX Designer
+  └── 1 QA Tester
+
+
+================================================================================
+10. SECURITY BEST PRACTICES
+================================================================================
+
+Backend:
+  ✓ Always use HTTPS in production
+  ✓ Implement rate limiting on all endpoints
+  ✓ Validate and sanitize all user inputs
+  ✓ Use environment variables for secrets
+  ✓ Implement proper CORS policies
+  ✓ Hash passwords with bcrypt (never plain text)
+  ✓ Use short-lived JWT tokens (30min-1hr)
+  ✓ Implement refresh token rotation
+  ✓ Log security events
+
+Mobile:
+  ✓ Store tokens in secure storage only
+  ✓ Implement certificate pinning
+  ✓ Obfuscate code before release
+  ✓ Use biometric authentication where possible
+  ✓ Never log sensitive data
+
+Web:
+  ✓ Implement Content Security Policy (CSP)
+  ✓ Use HttpOnly cookies for sensitive data
+  ✓ Sanitize user inputs to prevent XSS
+  ✓ Implement CSRF protection
+
+
+================================================================================
+FINAL NOTES
+================================================================================
+
+This tech stack is:
+  ✓ Modern (2025 best practices)
+  ✓ Production-ready
+  ✓ Scalable (handles growth from MVP to 100K+ users)
+  ✓ Cross-platform (same backend for mobile + web)
+  ✓ Cost-effective (many free tiers available)
+  ✓ Well-documented (all libraries have excellent docs)
+
+CROSS-PLATFORM BENEFIT:
+Your Python backend serves ALL platforms:
+  - iOS app → calls same API
+  - Android app → calls same API  
+  - Web app → calls same API
+  - Future desktop app → calls same API
+
+This is the power of API-first architecture!
+
+================================================================================

@@ -1,0 +1,337 @@
+================================================================================
+           GMAIL SMTP SETUP & TESTING GUIDE
+         Complete Email Verification Walkthrough
+================================================================================
+
+PART 1: SETUP GMAIL SMTP (5 minutes)
+================================================================================
+
+Step 1: Enable 2-Factor Authentication
+---------------------------------------
+1. Go to: https://myaccount.google.com/security
+2. Click "2-Step Verification"
+3. Follow the setup wizard to enable 2FA
+4. Use your phone for verification
+
+Step 2: Generate App Password
+------------------------------
+1. Go to: https://myaccount.google.com/apppasswords
+2. Select app: "Mail"
+3. Select device: "Other (Custom name)"
+4. Name it: "Cura AI Backend"
+5. Click "Generate"
+6. **IMPORTANT:** Copy the 16-character password
+   Example: abcd efgh ijkl mnop
+
+Step 3: Update .env File
+-------------------------
+Open: c:\Users\User\OneDrive\Desktop\cura-ai-backend\.env
+
+Update these lines with YOUR email and app password:
+
+SMTP_USER=jayworthjohn@gmail.com           ← Your Gmail address
+SMTP_PASSWORD=abcdefghijklmnop              ← 16-char app password (no spaces!)
+
+Keep the rest as is:
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+FROM_EMAIL=noreply@curaai.com
+FROM_NAME=Cura AI
+
+Step 4: Restart Server
+-----------------------
+Press Ctrl+C to stop the server, then:
+uvicorn app.main:app --reload
+
+
+PART 2: TEST EMAIL VERIFICATION (3 steps)
+================================================================================
+
+STEP 1: Register New User
+--------------------------
+Go to: http://127.0.0.1:8000/docs
+Find: POST /auth/register
+Click: "Try it out"
+
+Request body:
+{
+  "email": "YOUR_EMAIL_HERE@gmail.com",    ← Use YOUR real email!
+  "password": "SecurePass123",
+  "confirm_password": "SecurePass123",
+  "full_name": "Test User"
+}
+
+Click: Execute
+
+Expected Response (201 Created):
+{
+  "message": "Registration successful! Please check your email for verification code.",
+  "email": "YOUR_EMAIL_HERE@gmail.com",
+  "expires_in_minutes": 10
+}
+
+Check Server Logs - Should see:
+✅ "Email sent successfully"  ← Good!
+❌ "Failed to send email"     ← Check SMTP credentials
+
+
+STEP 2: Check Your Email
+-------------------------
+1. Open your Gmail inbox
+2. Look for email from "Cura AI"
+3. Subject: "Verify your email - Cura AI"
+4. Find the 6-digit code, example: 123456
+
+If no email:
+- Check spam/junk folder
+- Wait 1-2 minutes
+- Check server logs for errors
+- Verify SMTP settings in .env
+
+
+STEP 3: Verify Email with OTP
+------------------------------
+In Swagger UI:
+Find: POST /auth/verify-email
+Click: "Try it out"
+
+Request body:
+{
+  "email": "YOUR_EMAIL_HERE@gmail.com",
+  "otp_code": "123456"                     ← OTP from email
+}
+
+Click: Execute
+
+Expected Response (200 OK):
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "user": {
+    "email": "YOUR_EMAIL_HERE@gmail.com",
+    "full_name": "Test User",
+    "id": 1,
+    "is_active": true,
+    "is_email_verified": true          ← Should be TRUE
+  }
+}
+
+✅ Email verified successfully!
+✅ You received an access token
+✅ Account is now active
+
+
+PART 3: TEST LOGIN
+================================================================================
+
+Now test that login works:
+
+Find: POST /auth/login
+Click: "Try it out"
+
+Fill in:
+- username: YOUR_EMAIL_HERE@gmail.com
+- password: SecurePass123
+
+Click: Execute
+
+Expected Response (200 OK):
+{
+  "access_token": "...",
+  "user": {...}
+}
+
+✅ Login successful!
+
+
+PART 4: TEST PROTECTED ENDPOINT
+================================================================================
+
+Test that authentication works:
+
+1. Click "Authorize" button (🔓 icon at top right)
+2. Paste your access_token from Step 3
+3. Click "Authorize"
+4. Click "Close"
+
+Find: GET /auth/me
+Click: "Try it out"
+Click: Execute
+
+Expected Response (200 OK):
+{
+  "email": "YOUR_EMAIL_HERE@gmail.com",
+  "full_name": "Test User",
+  "id": 1,
+  ...
+}
+
+✅ Authentication working!
+
+
+TROUBLESHOOTING
+================================================================================
+
+Problem: "5.7.8 Username and Password not accepted"
+----------------------------------------------------
+Solution:
+- Enable 2FA on Gmail account
+- Generate new App Password
+- Make sure you're using the 16-char app password
+- Remove all spaces from app password
+- Don't use your regular Gmail password
+
+Problem: No email received
+--------------------------
+Solution:
+- Check spam/junk folder
+- Wait 2-3 minutes
+- Check server logs for "Email sent successfully"
+- Try with different email address
+- Verify SMTP_USER and SMTP_PASSWORD in .env
+
+Problem: "OTP has expired"
+--------------------------
+Solution:
+- OTP expires in 10 minutes
+- Use POST /auth/resend-otp to get new code
+- Check your email for the new code
+
+Problem: "Invalid verification code"
+------------------------------------
+Solution:
+- Make sure you copied the full 6-digit code
+- Check if OTP expired (older than 10 minutes)
+- Resend OTP if needed
+
+Problem: "Email already verified"
+---------------------------------
+Solution:
+- This email is already verified
+- Just use POST /auth/login to sign in
+- Or register with a different email
+
+
+TESTING CHECKLIST
+================================================================================
+
+[ ] 2FA enabled on Gmail
+[ ] App Password generated
+[ ] .env file updated with correct SMTP credentials
+[ ] Server restarted
+[ ] Register new user - success message received
+[ ] Email received in inbox (check spam too)
+[ ] 6-digit OTP code visible in email
+[ ] Email verified with OTP - access token received
+[ ] Login works with email/password
+[ ] Can access /auth/me with token
+
+
+EMAIL TEMPLATE (What Users Will See)
+================================================================================
+
+Subject: Verify your email - Cura AI
+
+Body:
+┌─────────────────────────────────────────┐
+│         Welcome to Cura AI!             │
+├─────────────────────────────────────────┤
+│                                         │
+│  Hi Test User,                          │
+│                                         │
+│  Thank you for signing up! Please       │
+│  verify your email address using the    │
+│  code below:                            │
+│                                         │
+│            ╔════════╗                   │
+│            ║ 123456 ║                   │
+│            ╚════════╝                   │
+│                                         │
+│  This code will expire in 10 minutes.   │
+│                                         │
+│  If you didn't request this, please     │
+│  ignore this email.                     │
+│                                         │
+│  Best regards,                          │
+│  The Cura AI Team                       │
+└─────────────────────────────────────────┘
+
+
+COMPLETE FLOW DIAGRAM
+================================================================================
+
+1. User Registration
+   ↓
+2. Backend generates OTP → Saves to database
+   ↓
+3. Backend sends email with OTP → User's inbox
+   ↓
+4. User checks email → Copies OTP code
+   ↓
+5. User submits OTP → Backend verifies
+   ↓
+6. Backend marks email as verified → Returns access token
+   ↓
+7. User can now login with email/password
+   ↓
+8. User accesses protected endpoints with token
+
+
+DEVELOPMENT vs PRODUCTION
+================================================================================
+
+DEVELOPMENT:
+- Use your personal Gmail for testing
+- App Password is fine
+- Volume: Low (few emails per day)
+
+PRODUCTION:
+- Use professional email service:
+  * SendGrid (100 emails/day free)
+  * AWS SES (62,000 emails/month free)
+  * Mailgun (5,000 emails/month free)
+- Higher deliverability
+- Better analytics
+- No daily limits
+
+
+NEXT STEPS
+================================================================================
+
+Once email verification works:
+
+1. ✅ Test with multiple users
+2. ✅ Test OTP expiration (wait 11 minutes)
+3. ✅ Test resend OTP functionality
+4. ✅ Test error cases (wrong OTP, expired OTP)
+5. ✅ Integrate with mobile app
+6. ✅ Integrate with web app
+7. ⏳ Deploy to production
+
+
+QUICK REFERENCE
+================================================================================
+
+Gmail App Password Setup:
+https://myaccount.google.com/apppasswords
+
+API Docs:
+http://127.0.0.1:8000/docs
+
+Endpoints:
+- POST /auth/register       → Create account
+- POST /auth/verify-email   → Verify with OTP
+- POST /auth/resend-otp     → Get new OTP
+- POST /auth/login          → Sign in
+- GET  /auth/me             → Current user
+
+Support Email Error Codes:
+535 = Wrong credentials (check app password)
+550 = Invalid recipient
+554 = Transaction failed
+
+
+================================================================================
+You're all set! Follow the steps above and email verification will work! 🚀
+================================================================================

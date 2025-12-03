@@ -1,0 +1,25 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+asyncpg
+alembic
+python-jose[cryptography]
+passlib
+argon2-cffi
+python-dotenv
+email-validator
+httpx
+python-multipart
+
+# Email
+aiosmtplib
+jinja2
+
+# Google OAuth
+authlib
+
+# Utilities
+pydantic-settings
+structlog
+
+
