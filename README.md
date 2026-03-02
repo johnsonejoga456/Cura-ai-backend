@@ -1,2 +1,2 @@
 
-Cura AI Backen
+Cura AI Backend
