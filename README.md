@@ -1,1 +1,1 @@
-
+curaai.team@gmail.com
